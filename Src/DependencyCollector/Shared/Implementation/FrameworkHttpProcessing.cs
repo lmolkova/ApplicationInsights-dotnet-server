@@ -1,4 +1,7 @@
-﻿namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
+﻿using System.Diagnostics;
+using Microsoft.ApplicationInsights.Common;
+
+namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
 {
     using System;
     using System.Globalization;
@@ -85,7 +88,7 @@
                 bool isCustomCreated = false;
 
                 var telemetry = ClientServerDependencyTracker.BeginTracking(this.telemetryClient);
-
+                telemetry.Id = AppInsightsActivity.GenerateDependencyId();
                 telemetry.Type = RemoteDependencyConstants.HTTP;
                 telemetry.Name = url.AbsolutePath;
                 telemetry.Target = DependencyTargetNameHelper.GetDependencyTargetName(url);

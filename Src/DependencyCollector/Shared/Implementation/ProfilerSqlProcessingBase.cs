@@ -1,4 +1,7 @@
-﻿namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
+﻿using System.Diagnostics;
+using Microsoft.ApplicationInsights.Common;
+
+namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
 {
     using System;
     using System.Data.SqlClient;
@@ -231,7 +234,7 @@
                 // Try to begin if sampling this operation
                 bool isCustomCreated = false;
                 var telemetry = ClientServerDependencyTracker.BeginTracking(this.telemetryClient);
-
+                telemetry.Id = AppInsightsActivity.GenerateDependencyId();
                 telemetry.Name = resourceName;
                 telemetry.Type = RemoteDependencyConstants.SQL;
                 telemetry.Target = this.GetDependencyTarget(thisObj);

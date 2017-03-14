@@ -4,6 +4,7 @@
     using System.Data.SqlClient;
     using System.Net;
     using Microsoft.ApplicationInsights.DataContracts;
+    using Common;
 
     internal static class ClientServerDependencyTracker
     {
@@ -20,7 +21,13 @@
         {
             var telemetry = new DependencyTelemetry();
             telemetry.Start();
+
+            var parentRequestId = AppInsightsActivity.RequestId;
+            telemetry.Context.Operation.Id = AppInsightsActivity.GetRootId(parentRequestId);
+            telemetry.Context.Operation.ParentId = parentRequestId;
+
             telemetryClient.Initialize(telemetry);
+
             PretendProfilerIsAttached = false;
             return telemetry;
         }

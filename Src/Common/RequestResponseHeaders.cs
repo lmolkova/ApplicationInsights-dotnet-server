@@ -1,4 +1,8 @@
-﻿namespace Microsoft.ApplicationInsights.Common
+﻿using System;
+using System.Diagnostics;
+using System.Threading;
+
+namespace Microsoft.ApplicationInsights.Common
 {
     /// <summary>
     /// Header names for requests / responses.
@@ -29,5 +33,8 @@
         /// Standard root id header.
         /// </summary>
         public const string StandardRootIdHeader = "x-ms-request-root-id";
+
+        public const string RequestIdHeader = "Request-Id";
+        public const string CorrelationContextHeader = "Correlation-Context";
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
+﻿using System.Diagnostics;
+using Microsoft.ApplicationInsights.Common;
+
+namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
 {
     using System;
     using System.Globalization;
@@ -66,6 +69,7 @@
                 {
                     bool isCustomCreated = false;
                     var telemetry = ClientServerDependencyTracker.BeginTracking(this.telemetryClient);
+                    telemetry.Id = AppInsightsActivity.GenerateDependencyId();
                     telemetry.Name = resourceName;
                     telemetry.Target = string.Join(" | ", dataSource, database);
                     telemetry.Type = RemoteDependencyConstants.SQL;

@@ -90,6 +90,25 @@
         }
 
         /// <summary>
+        /// Implements on begin callback of http module.
+        /// </summary>
+        public void OnPreRequestHandlerExecute(HttpContext context)
+        {
+            if (this.telemetryClient == null)
+            {
+                throw new InvalidOperationException("Initialize has not been called on this module yet.");
+            }
+
+            if (context == null)
+            {
+                WebEventSource.Log.NoHttpContextWarning();
+                return;
+            }
+
+            var requestTelemetry = context.ReadOrCreateRequestTelemetryPrivate();
+            telemetryClient.Initialize(requestTelemetry);
+        }
+        /// <summary>
         /// Implements on end callback of http module.
         /// </summary>
         public void OnEndRequest(HttpContext context)
@@ -117,6 +136,7 @@
             {
                 requestTelemetry.Url = context.Request.UnvalidatedGetUrl();
             }
+
 
             if (string.IsNullOrEmpty(requestTelemetry.Context.InstrumentationKey))
             {

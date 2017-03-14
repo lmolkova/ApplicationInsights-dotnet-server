@@ -1,4 +1,6 @@
-﻿namespace Microsoft.ApplicationInsights.Web.Implementation
+﻿using System.Diagnostics;
+
+namespace Microsoft.ApplicationInsights.Web.Implementation
 {
     using System;
     using System.Web;

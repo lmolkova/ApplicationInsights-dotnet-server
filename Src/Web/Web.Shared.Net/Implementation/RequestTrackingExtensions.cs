@@ -1,4 +1,8 @@
-﻿namespace Microsoft.ApplicationInsights.Web.Implementation
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using Microsoft.ApplicationInsights.Extensibility.Implementation;
+
+namespace Microsoft.ApplicationInsights.Web.Implementation
 {
     using System;
     using System.Globalization;
@@ -18,8 +22,6 @@
             }
 
             var result = new RequestTelemetry();
-            result.GenerateOperationId();
-
             platformContext.Items.Add(RequestTrackingConstants.RequestTelemetryItemName, result);
             WebEventSource.Log.WebTelemetryModuleRequestTelemetryCreated();
 

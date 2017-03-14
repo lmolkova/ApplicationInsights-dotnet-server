@@ -1,4 +1,8 @@
-﻿namespace Microsoft.ApplicationInsights.Web
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+
+namespace Microsoft.ApplicationInsights.Web
 {
     using System.Web;
     using Common;
@@ -45,33 +49,35 @@
             OperationContext parentContext = requestTelemetry.Context.Operation;
             HttpRequest currentRequest = platformContext.Request;
 
-            // Make sure that RequestTelemetry is initialized.
-            if (string.IsNullOrEmpty(parentContext.ParentId))
-            {
-                if (!string.IsNullOrWhiteSpace(this.ParentOperationIdHeaderName))
-                {
-                    var parentId = currentRequest.UnvalidatedGetHeader(this.ParentOperationIdHeaderName);
-                    if (!string.IsNullOrEmpty(parentId))
-                    {
-                        parentContext.ParentId = parentId;
-                    }
-                }
-            }
-
             if (string.IsNullOrEmpty(parentContext.Id))
             {
-                if (!string.IsNullOrWhiteSpace(this.RootOperationIdHeaderName))
+                var currentRequestId = AppInsightsActivity.RequestId;
+                // there is no operation id
+                if (currentRequestId == null)
                 {
-                    var rootId = currentRequest.UnvalidatedGetHeader(this.RootOperationIdHeaderName);
-                    if (!string.IsNullOrEmpty(rootId))
+                    //there is no Id in CorrelationContext, re-read headers
+                    string rootId, parentId, requestId;
+                    if (TryParseStandardHeader(platformContext.Request, out rootId, out parentId, out requestId) ||
+                        TryParseCustomHeaders(platformContext.Request, out rootId, out parentId, out requestId))
                     {
                         parentContext.Id = rootId;
+                        parentContext.ParentId = parentId;
+                        requestTelemetry.Id = requestId;
                     }
+                    else
+                    {
+                        requestTelemetry.Id = AppInsightsActivity.GenerateNewId();
+                        parentContext.Id = AppInsightsActivity.GetRootId(requestTelemetry.Id);
+                    }
+                    AppInsightsActivity.ParentRequestId = parentId;
+                    AppInsightsActivity.RequestId = requestTelemetry.Id;
                 }
-
-                if (string.IsNullOrEmpty(parentContext.Id))
+                else
                 {
-                    parentContext.Id = requestTelemetry.Id;
+                    //there is no Operation context, but there is context in CallContext
+                    requestTelemetry.Id = currentRequestId;
+                    parentContext.Id = AppInsightsActivity.GetRootId(currentRequestId);
+                    parentContext.ParentId = AppInsightsActivity.ParentRequestId;
                 }
             }
 
@@ -87,6 +93,50 @@
                     telemetry.Context.Operation.Id = parentContext.Id;
                 }
             }
+        }
+
+        private bool TryParseStandardHeader(
+            HttpRequest request,
+            out string rootId,
+            out string parentId,
+            out string requestId)
+        {
+            parentId = request.UnvalidatedGetHeader(RequestResponseHeaders.RequestIdHeader);
+            if (!string.IsNullOrEmpty(parentId))
+            {
+                rootId = AppInsightsActivity.GetRootId(parentId);
+                requestId = AppInsightsActivity.GenerateRequestId(parentId);
+                //TODO
+                //var correlationContext = request.UnvalidatedGetHeader(RequestResponseHeaders.CorrelationContextHeader);
+                //CorrelationContext.Context = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("Id", rootId) };
+                return true;
+            }
+            rootId = null;
+            requestId = null;
+            return false;
+        }
+
+        private bool TryParseCustomHeaders(
+            HttpRequest request,
+            out string rootId,
+            out string parentId,
+            out string requestId)
+        {
+            parentId = request.UnvalidatedGetHeader(this.ParentOperationIdHeaderName);
+            rootId = request.UnvalidatedGetHeader(this.RootOperationIdHeaderName);
+            if (!string.IsNullOrEmpty(rootId))
+            {
+                requestId = AppInsightsActivity.GenerateRequestId(rootId);
+                return true;
+            }
+            if (!string.IsNullOrEmpty(parentId))
+            {
+                requestId = AppInsightsActivity.GenerateRequestId(parentId);
+                return true;
+            }
+
+            requestId = null;
+            return false;
         }
     }
 }
