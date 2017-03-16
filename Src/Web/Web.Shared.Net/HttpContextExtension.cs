@@ -2,7 +2,6 @@
 
 namespace System.Web
 {
-    using System.Web;
     using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Web.Implementation;
 

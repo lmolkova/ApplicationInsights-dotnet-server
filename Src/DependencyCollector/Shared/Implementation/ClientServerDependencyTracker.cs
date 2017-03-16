@@ -27,7 +27,6 @@
             //TODO: move Id generation to Base SDK
             telemetry.Id = AppInsightsActivity.GenerateDependencyId(telemetry.Context.Operation.ParentId, telemetry.Id);
 
-            Debug.WriteLine($"dependency id {telemetry.Id} parent { telemetry.Context.Operation.ParentId}, root {telemetry.Context.Operation.Id}");
             PretendProfilerIsAttached = false;
             return telemetry;
         }

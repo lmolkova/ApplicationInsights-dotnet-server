@@ -49,11 +49,6 @@
                 return null;
             }
 
-            if (!context.Items.Contains(RequestTrackingConstants.RequestTelemetryItemName))
-            {
-                return null;
-            }
-
             return context.Items[RequestTrackingConstants.RequestTelemetryItemName] as IOperationHolder<RequestTelemetry>;
         }
 
