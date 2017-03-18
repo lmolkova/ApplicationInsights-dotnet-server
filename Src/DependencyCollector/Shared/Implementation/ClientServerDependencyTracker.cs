@@ -2,7 +2,6 @@
 {
     using System;
     using System.Data.SqlClient;
-    using System.Diagnostics;
     using System.Net;
     using Microsoft.ApplicationInsights.DataContracts;
     using Common;
@@ -23,9 +22,7 @@
             var telemetry = new DependencyTelemetry();
             telemetry.Start();
             telemetryClient.Initialize(telemetry);
-
-            //TODO: move Id generation to Base SDK
-            telemetry.Id = AppInsightsActivity.GenerateDependencyId(telemetry.Context.Operation.ParentId, telemetry.Id);
+            telemetry.Id = AppInsightsActivity.GenerateDependencyId(telemetry.Context.Operation.ParentId);
 
             PretendProfilerIsAttached = false;
             return telemetry;

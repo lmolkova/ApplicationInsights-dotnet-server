@@ -1,10 +1,6 @@
 ﻿namespace Microsoft.ApplicationInsights.DependencyCollector
 {
-    using System;
-    using System.Collections.Generic;
     using System.Net;
-    using System.Text;
-    using Common;
     using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

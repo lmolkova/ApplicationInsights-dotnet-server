@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AccountIdTelemetryInitializer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppInsightsActivity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ApplicationInsightsHttpModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AuthenticatedUserIdTelemetryInitializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HttpContextExtension.cs" />

@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)HttpDependenciesParsingTelemetryInitializer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\AppInsightsActivity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ClientServerDependencyTracker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\DependencyTargetNameHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ProfilerSqlConnectionProcessing.cs" />

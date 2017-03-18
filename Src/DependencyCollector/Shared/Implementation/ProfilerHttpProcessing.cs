@@ -59,7 +59,7 @@
             // Since dependencySource is no longer set, sdk version is prepended with information which can identify whether RDD was collected by profiler/framework
             // For directly using TrackDependency(), version will be simply what is set by core
             string prefix = "rdd" + RddSource.Profiler + ":";
-            this.telemetryClient.Context.GetInternalContext().SdkVersion = SdkVersionUtils.GetSdkVersion(prefix);
+            this.telemetryClient.Context.GetInternalContext().SdkVersion = Web.Implementation.SdkVersionUtils.GetSdkVersion(prefix);
             if (!string.IsNullOrEmpty(agentVersion))
             {
                 this.telemetryClient.Context.GetInternalContext().AgentVersion = agentVersion;
@@ -328,6 +328,10 @@
                             webRequest.Headers.Add(RequestResponseHeaders.StandardParentIdHeader, parentId);
                         if (webRequest.Headers[RequestResponseHeaders.RequestIdHeader] == null)
                             webRequest.Headers.Add(RequestResponseHeaders.RequestIdHeader, telemetry.Id);
+                        if (webRequest.Headers[RequestResponseHeaders.CorrelationContextHeader] == null)
+                        {
+                            webRequest.Headers.SetHeaderFromNameValueCollection(RequestResponseHeaders.CorrelationContextHeader, telemetry.Context.CorrelationContext);
+                        }
                     }
                 }
             }

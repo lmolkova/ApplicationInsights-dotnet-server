@@ -106,7 +106,15 @@
                 return;
             }
 
-            //TODO: retore execution context
+            //if CallContext/AsyncLocal was lost after BeginRequest, return it back
+            if (CallContextHelpers.GetCurrentOperationContext() == null)
+            {
+                var currentOperationContext = context.GetOperationCallContext();
+                if (currentOperationContext != null)
+                {
+                    CallContextHelpers.SaveOperationContext(currentOperationContext);
+                }
+            }
         }
 
         /// <summary>
@@ -229,7 +237,7 @@
         public void Initialize(TelemetryConfiguration configuration)
         {
             this.telemetryClient = new TelemetryClient(configuration);
-            this.telemetryClient.Context.GetInternalContext().SdkVersion = SdkVersionUtils.GetSdkVersion("web:");
+            this.telemetryClient.Context.GetInternalContext().SdkVersion = Implementation.SdkVersionUtils.GetSdkVersion("web:");
 
             if (configuration != null && configuration.TelemetryChannel != null)
             {
