@@ -5,19 +5,18 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DependencyCollector.Shared.Tests;
 
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyCopyright("Copyright © Microsoft. All Rights Reserved.")]
 
 [assembly: ComVisible(false)]
 
-[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.Log4NetAppender.Net40.Tests, PublicKey=" + AssemblyInfo.PublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.Log4NetAppender.Net45.Tests, PublicKey=" + AssemblyInfo.PublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.NLogTarget.Net40.Tests, PublicKey=" + AssemblyInfo.PublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.NLogTarget.Net45.Tests, PublicKey=" + AssemblyInfo.PublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.TraceListener.Net40.Tests, PublicKey=" + AssemblyInfo.PublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.TraceListener.Net45.Tests, PublicKey=" + AssemblyInfo.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.Log4NetAppender.Net40.Tests, PublicKey=" + DependencyCollector.Shared.Tests.AssemblyInfo.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.Log4NetAppender.Net45.Tests, PublicKey=" + DependencyCollector.Shared.Tests.AssemblyInfo.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.NLogTarget.Net40.Tests, PublicKey=" + DependencyCollector.Shared.Tests.AssemblyInfo.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.NLogTarget.Net45.Tests, PublicKey=" + DependencyCollector.Shared.Tests.AssemblyInfo.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.TraceListener.Net40.Tests, PublicKey=" + DependencyCollector.Shared.Tests.AssemblyInfo.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.TraceListener.Net45.Tests, PublicKey=" + DependencyCollector.Shared.Tests.AssemblyInfo.PublicKey)]
 
 namespace DependencyCollector.Shared.Tests
 {

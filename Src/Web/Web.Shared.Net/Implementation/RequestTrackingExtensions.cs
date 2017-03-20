@@ -29,48 +29,6 @@
                 Name = platformContext.CreateRequestNamePrivate()
             };
 
-
-            string parentId;
-            IEnumerable<KeyValuePair<string, string>> correlationContext;
-            //Parse standard correlation headers
-            //If there are no standard headers, let OperationCorrelaitonInititlizer set Ids.
-            if (TryParseStandardHeader(request, out parentId, out correlationContext))
-            {
-                bool isHierarchicalId = AppInsightsActivity.IsHierarchicalRequestId(parentId);
-                requestTelemetry.Context.Operation.ParentId = parentId;
-                if (isHierarchicalId)
-                {
-                    requestTelemetry.Context.Operation.Id = AppInsightsActivity.GetRootId(parentId);
-                    requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(parentId);
-                }
-                if (correlationContext != null)
-                {
-                    foreach (var item in correlationContext)
-                    {
-                        if (!string.IsNullOrEmpty(item.Key) &&
-                            string.IsNullOrEmpty(item.Value) &&
-                            item.Key.Length <= 16 &&
-                            item.Value.Length < 42)
-                        {
-                            if (!isHierarchicalId && item.Key == "Id")
-                            {
-                                requestTelemetry.Context.Operation.Id = item.Value;
-                                requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(item.Value);
-                            }
-                            requestTelemetry.Context.CorrelationContext[item.Key] = item.Value;
-                        }
-                    }
-                }
-
-                if (string.IsNullOrEmpty(requestTelemetry.Context.Operation.Id))
-                {
-                    //ok, upstream gave us non-hirarchical id and no Id in the correlation context
-                    //We'll use parentId to generate our Ids.
-                    requestTelemetry.Context.Operation.Id = AppInsightsActivity.GetRootId(parentId);
-                    requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(parentId);
-                }
-            }
-
             var result = client.StartOperation(requestTelemetry);
             platformContext.Items.Add(RequestTrackingConstants.RequestTelemetryItemName, result);
 
@@ -171,22 +129,6 @@
             name = request.HttpMethod + " " + name;
 
             return name;
-        }
-
-        private static bool TryParseStandardHeader(
-            HttpRequest request,
-            out string parentId,
-            out IEnumerable<KeyValuePair<string,string>> correlationContext)
-        {
-            parentId = request.UnvalidatedGetHeader(RequestResponseHeaders.RequestIdHeader);
-            if (!string.IsNullOrEmpty(parentId)) //don't bother parsing correlation-context if there was no RequestId
-            {
-                correlationContext =
-                    request.Headers.GetNameValueCollectionFromHeader(RequestResponseHeaders.CorrelationContextHeader);
-                return true;
-            }
-            correlationContext = null;
-            return false;
         }
     }
 }

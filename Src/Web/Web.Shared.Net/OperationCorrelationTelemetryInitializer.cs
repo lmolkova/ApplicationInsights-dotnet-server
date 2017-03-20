@@ -45,33 +45,15 @@
             OperationContext parentContext = requestTelemetry.Context.Operation;
             HttpRequest currentRequest = platformContext.Request;
 
-            //Pares Headers only when RequestTelemetry is being initialized
-            if (telemetry == requestTelemetry)
+            //We either have both root Id and parent Id or just rootId.
+            //having single parentId is inconsistent and invalid and we'll update it.
+            if (string.IsNullOrEmpty(parentContext.Id))
             {
-                //We either have both root Id and parent Id or just rootId.
-                //having single parentId is inconsistent and invalid and we'll update it.
-                if (string.IsNullOrEmpty(parentContext.Id))
+                //Parse standard correlation headers 
+                if (!TryParseStandardHeader(requestTelemetry, currentRequest))
                 {
-                    string rootId, parentId;
-                    if (TryParseCustomHeaders(currentRequest, out rootId, out parentId))
-                    {
-                        if (!string.IsNullOrEmpty(rootId))
-                        {
-                            parentContext.Id = rootId;
-                            requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(rootId);
-                        }
-                        else //we received invalid request with parent, but without root
-                        {
-                            parentContext.Id = parentId;
-                            requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(parentId);
-                        }
-
-                        if (!string.IsNullOrEmpty(parentId))
-                        {
-                            parentContext.ParentId = parentId;
-                        }
-                    }
-                    else
+                    //no, standard headers, parse custom
+                    if (!TryParseCustomHeaders(requestTelemetry, currentRequest))
                     {
                         //there was nothing in the headers, mimic Activity API behavior
                         requestTelemetry.Id = AppInsightsActivity.GenerateNewId();
@@ -79,7 +61,8 @@
                     }
                 }
             }
-            else
+
+            if (telemetry != requestTelemetry)
             {
                 if (string.IsNullOrEmpty(telemetry.Context.Operation.ParentId))
                 {
@@ -93,17 +76,84 @@
             }
         }
 
-        private bool TryParseCustomHeaders(
-            HttpRequest request,
-            out string rootId,
-            out string parentId)
+        private static bool TryParseStandardHeader(
+            RequestTelemetry requestTelemetry,
+            HttpRequest request)
         {
-            parentId = request.UnvalidatedGetHeader(this.ParentOperationIdHeaderName);
-            rootId = request.UnvalidatedGetHeader(this.RootOperationIdHeaderName);
+            var parentId = request.UnvalidatedGetHeader(RequestResponseHeaders.RequestIdHeader);
+            if (!string.IsNullOrEmpty(parentId)) //don't bother parsing correlation-context if there was no RequestId
+            {
+                var correlationContext =
+                    request.Headers.GetNameValueCollectionFromHeader(RequestResponseHeaders.CorrelationContextHeader);
+
+                bool correlationContextHasId = false;
+                if (correlationContext != null)
+                {
+                    foreach (var item in correlationContext)
+                    {
+                        if (!string.IsNullOrEmpty(item.Key) &&
+                            !string.IsNullOrEmpty(item.Value) &&
+                            item.Key.Length <= 16 &&
+                            item.Value.Length < 42)
+                        {
+                            if (item.Key == "Id")
+                            {
+                                correlationContextHasId = true;
+                                requestTelemetry.Context.Operation.Id = item.Value;
+                                requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(item.Value);
+                            }
+                            requestTelemetry.Context.CorrelationContext[item.Key] = item.Value;
+                        }
+                    }
+                }
+
+                requestTelemetry.Context.Operation.ParentId = parentId;
+                if (!correlationContextHasId && AppInsightsActivity.IsHierarchicalRequestId(parentId))
+                {
+                    requestTelemetry.Context.Operation.Id = AppInsightsActivity.GetRootId(parentId);
+                    requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(parentId);
+                }
+
+                if (string.IsNullOrEmpty(requestTelemetry.Context.Operation.Id))
+                {
+                    //ok, upstream gave us non-hirarchical id and no Id in the correlation context
+                    //We'll use parentId to generate our Ids.
+                    requestTelemetry.Context.Operation.Id = AppInsightsActivity.GetRootId(parentId);
+                    requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(parentId);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private bool TryParseCustomHeaders(
+            RequestTelemetry requestTelemetry,
+            HttpRequest request)
+        {
+            var parentId = request.UnvalidatedGetHeader(this.ParentOperationIdHeaderName);
+            var rootId = request.UnvalidatedGetHeader(this.RootOperationIdHeaderName);
+
             if (string.IsNullOrEmpty(rootId) && string.IsNullOrEmpty(parentId))
             {
                 return false;
             }
+
+            if (!string.IsNullOrEmpty(rootId))
+            {
+                requestTelemetry.Context.Operation.Id = rootId;
+                requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(rootId);
+            }
+            else //we received invalid request with parent, but without root
+            {
+                requestTelemetry.Context.Operation.Id = parentId;
+                requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(parentId);
+            }
+
+            if (!string.IsNullOrEmpty(parentId))
+            {
+                requestTelemetry.Context.Operation.ParentId = parentId;
+            }
+
             return true;
         }
     }

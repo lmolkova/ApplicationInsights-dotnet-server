@@ -1,4 +1,9 @@
-﻿namespace Microsoft.ApplicationInsights.Web
+﻿using System.Diagnostics;
+using System.Runtime.Serialization.Json;
+using System.Threading;
+using Microsoft.ApplicationInsights.DataContracts;
+
+namespace Microsoft.ApplicationInsights.Web
 {
     using System;
     using System.Collections.Generic;
@@ -385,6 +390,51 @@
 
             // VALIDATE
             Assert.Equal(appIdInSourceField, context.GetRequestTelemetry().Source);
+        }
+
+        [TestMethod]
+        public void OnOnPreRequestHandlerExecuteRestoresCallContext()
+        {
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+            headers.Add(RequestResponseHeaders.RequestIdHeader, "|guid.1");
+            headers.Add(RequestResponseHeaders.CorrelationContextHeader, "k=v");
+            var context = HttpModuleHelper.GetFakeHttpContext(headers);
+
+            var module = this.RequestTrackingTelemetryModuleFactory();
+            var config = TelemetryConfiguration.CreateDefault();
+            var operationTelemetryIntializer = new OperationCorrelationTelemetryInitializer();
+            config.TelemetryInitializers.Add(operationTelemetryIntializer);
+
+            config.InstrumentationKey = Guid.NewGuid().ToString();
+            module.Initialize(config);
+
+            var resetEvent = new ManualResetEvent(false);
+            //start on begin processing in child context, so outside of it, we won't have call context
+            ThreadPool.QueueUserWorkItem(o =>
+            {
+                HttpContext.Current = (HttpContext) o;
+                module.OnBeginRequest((HttpContext) o);
+                resetEvent.Set();
+            }, context);
+
+            resetEvent.WaitOne();
+
+            //module stored callcontext
+            Assert.NotNull(context.Items[RequestTrackingConstants.CallContextItemName]);
+
+            var requestTelemetry = context.GetRequestTelemetry();
+            //restore call context
+            module.OnPreRequestHandlerExecute(context);
+
+            //let's check it. If there is a CallContext, child telemetry will be properly filled
+            config.TelemetryInitializers.Remove(operationTelemetryIntializer);
+            var telemetryClient = new TelemetryClient(config);
+            using (var dependency = telemetryClient.StartOperation<DependencyTelemetry>("child"))
+            {
+                Assert.Equal(requestTelemetry.Context.Operation.Id, dependency.Telemetry.Context.Operation.Id);
+                Assert.Equal(requestTelemetry.Id, dependency.Telemetry.Context.Operation.ParentId);
+                Assert.Equal("v", dependency.Telemetry.Context.Properties["k"]);
+            }
         }
 
         private RequestTrackingTelemetryModule RequestTrackingTelemetryModuleFactory()

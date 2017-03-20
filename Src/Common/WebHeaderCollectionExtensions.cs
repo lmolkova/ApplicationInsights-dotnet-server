@@ -123,11 +123,11 @@ namespace Microsoft.ApplicationInsights.Common
                     }
                 }
 
-                headers[headerName] = string.Join(", ", headerValues);
+                headers[headerName] = string.Join(",", headerValues);
 
                 if (!found)
                 {
-                    headers[headerName] += string.Format(CultureInfo.InvariantCulture, ", {0}={1}", keyName, value);
+                    headers[headerName] += string.Format(CultureInfo.InvariantCulture, ",{0}={1}", keyName, value);
                 }
             }
             else
@@ -190,7 +190,7 @@ namespace Microsoft.ApplicationInsights.Common
 
         private static string FormatKeyValueHeader(string key, string value)
         {
-            return string.Format(CultureInfo.InvariantCulture, "{0}={1}", key, value);
+            return string.Format(CultureInfo.InvariantCulture, "{0}={1}", key.Trim(), value.Trim());
         }
     }
 }

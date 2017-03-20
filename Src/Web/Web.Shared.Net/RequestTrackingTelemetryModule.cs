@@ -1,4 +1,6 @@
-﻿namespace Microsoft.ApplicationInsights.Web
+﻿using System.Diagnostics;
+
+namespace Microsoft.ApplicationInsights.Web
 {
     using System;
     using System.Collections.Generic;
@@ -112,7 +114,28 @@
                 var currentOperationContext = context.GetOperationCallContext();
                 if (currentOperationContext != null)
                 {
+                    Debug.WriteLine("???");
+                    Debug.WriteLine($" ctx {currentOperationContext.ParentOperationId} {currentOperationContext.RootOperationId}  {currentOperationContext.RootOperationName}");
+                    foreach (var item in currentOperationContext.CorrelationContext)
+                    {
+                        Debug.WriteLine($" ctx {item.Key}={item.Value}");
+                    }
+
                     CallContextHelpers.SaveOperationContext(currentOperationContext);
+                }
+            }
+            else
+            {
+                var ctx = CallContextHelpers.GetCurrentOperationContext();
+                Debug.WriteLine("<!!!");
+                if (ctx != null)
+                {
+                    Debug.WriteLine($" ctx {ctx.ParentOperationId} {ctx.RootOperationId}  {ctx.RootOperationName}");
+                    foreach (var item in ctx.CorrelationContext)
+                    {
+                        Debug.WriteLine($" ctx {item.Key}={item.Value}");
+                    }
+                    Debug.WriteLine("!!!>");
                 }
             }
         }

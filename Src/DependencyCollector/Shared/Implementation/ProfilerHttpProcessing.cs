@@ -14,7 +14,6 @@
     using Microsoft.ApplicationInsights.DependencyCollector.Implementation.Operation;
     using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.ApplicationInsights.Extensibility.Implementation;
-    using Microsoft.ApplicationInsights.Web.Implementation;
 
     /// <summary>
     /// Concrete class with all processing logic to generate RDD data from the calls backs
@@ -330,7 +329,13 @@
                             webRequest.Headers.Add(RequestResponseHeaders.RequestIdHeader, telemetry.Id);
                         if (webRequest.Headers[RequestResponseHeaders.CorrelationContextHeader] == null)
                         {
-                            webRequest.Headers.SetHeaderFromNameValueCollection(RequestResponseHeaders.CorrelationContextHeader, telemetry.Context.CorrelationContext);
+                            if (telemetry.Context.CorrelationContext != null &&
+                                telemetry.Context.CorrelationContext.Count > 0)
+                            {
+                                webRequest.Headers.SetHeaderFromNameValueCollection(
+                                    RequestResponseHeaders.CorrelationContextHeader,
+                                    telemetry.Context.CorrelationContext);
+                            }
                         }
                     }
                 }
