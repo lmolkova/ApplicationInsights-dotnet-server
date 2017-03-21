@@ -418,6 +418,8 @@
                 Assert.Equal(requestTelemetry.Context.Operation.Id, dependency.Telemetry.Context.Operation.Id);
                 Assert.Equal(requestTelemetry.Id, dependency.Telemetry.Context.Operation.ParentId);
             }
+
+            module.OnEndRequest(context);
         }
 
         private RequestTrackingTelemetryModule RequestTrackingTelemetryModuleFactory()

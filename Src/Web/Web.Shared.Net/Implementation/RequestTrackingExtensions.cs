@@ -28,17 +28,24 @@
 
             WebEventSource.Log.WebTelemetryModuleRequestTelemetryCreated();
 
-            return result;
+            return null; //result;
+        }
+
+        internal static IOperationHolder<RequestTelemetry> GetOrStartOperation(
+            this HttpContext platformContext, TelemetryClient telemetryClient)
+        {
+            var operation = platformContext.GetOperation();
+            if (operation == null)
+            {
+                platformContext.StartOperationPrivate(telemetryClient);
+            }
+
+            return operation;
         }
 
         internal static RequestTelemetry GetOrCreateRequestTelemetry(
             this HttpContext platformContext)
         {
-            if (platformContext == null)
-            {
-                throw new ArgumentException("platformContext");
-            }
-
             var telemetry = platformContext.GetRequestTelemetry();
             if (telemetry == null)
             {

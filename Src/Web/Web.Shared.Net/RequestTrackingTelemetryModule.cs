@@ -105,8 +105,8 @@
                 WebEventSource.Log.NoHttpContextWarning();
                 return;
             }
-
-            context.StartOperationPrivate(this.telemetryClient); 
+            TryInitializeCorrelationHelperIfNotInitialized();
+            context.GetOrStartOperation(this.telemetryClient); 
         }
 
         /// <summary>

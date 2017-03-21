@@ -23,13 +23,13 @@
 
             var requestTelemetry = context.Items[RequestTrackingConstants.RequestTelemetryItemName] as RequestTelemetry;
 
-            if (requestTelemetry == null)
+/*            if (requestTelemetry == null)
             {
                 var operation =
                     context.Items[RequestTrackingConstants.OperationItemName] as IOperationHolder<RequestTelemetry>;
 
                 return operation?.Telemetry;
-            }
+            }*/
 
             return requestTelemetry;
         }
