@@ -1,14 +1,12 @@
-﻿using System;
-
-namespace Microsoft.ApplicationInsights.Web
+﻿namespace Microsoft.ApplicationInsights.Web
 {
+    using System;
     using System.Collections.Generic;
     using System.Web;
-    using Common;
     using Microsoft.ApplicationInsights.DataContracts;
+    using Microsoft.ApplicationInsights.TestFramework;
     using Microsoft.ApplicationInsights.Web.Helpers;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using ApplicationInsights.TestFramework;
 
     [TestClass]
     public class OperationCorrelationTelemetryInitializerTests
@@ -83,7 +81,7 @@ namespace Microsoft.ApplicationInsights.Web
 
             source.Initialize(customerTelemetry);
 
-            Assert.AreEqual(AppInsightsActivity.GetRootId(requestTelemetry.Id), requestTelemetry.Context.Operation.Id);
+            Assert.AreEqual(GetActivityRootId(requestTelemetry.Id), requestTelemetry.Context.Operation.Id);
         }
 
         [TestMethod]
@@ -114,7 +112,7 @@ namespace Microsoft.ApplicationInsights.Web
 
             Assert.AreEqual("RootId", requestTelemetry.Context.Operation.Id);
             Assert.AreNotEqual("RootId", requestTelemetry.Id);
-            Assert.AreEqual("RootId",AppInsightsActivity.GetRootId(requestTelemetry.Id));
+            Assert.AreEqual("RootId", GetActivityRootId(requestTelemetry.Id));
         }
 
         [TestMethod]
@@ -125,13 +123,13 @@ namespace Microsoft.ApplicationInsights.Web
 
             source.Initialize(requestTelemetry);
             Assert.AreEqual(null, requestTelemetry.Context.Operation.ParentId);
-            Assert.AreEqual(AppInsightsActivity.GetRootId(requestTelemetry.Id), requestTelemetry.Context.Operation.Id);
+            Assert.AreEqual(GetActivityRootId(requestTelemetry.Id), requestTelemetry.Context.Operation.Id);
         }
 
         [TestMethod]
         public void InitializeFromStandardHeadersAlwaysWinsCustomHeaders()
         {
-            var source = new TestableOperationCorrelationTelemetryInitializer(new Dictionary<string, string>()
+            var source = new TestableOperationCorrelationTelemetryInitializer(new Dictionary<string, string>
             {
                 ["Request-Id"] = "standard-id",
                 ["x-ms-request-id"] = "legacy-id",
@@ -142,7 +140,7 @@ namespace Microsoft.ApplicationInsights.Web
             source.Initialize(requestTelemetry);
             Assert.AreEqual("standard-id", requestTelemetry.Context.Operation.ParentId);
             Assert.AreEqual("standard-id", requestTelemetry.Context.Operation.Id);
-            Assert.AreEqual(AppInsightsActivity.GetRootId(requestTelemetry.Id), requestTelemetry.Context.Operation.Id);
+            Assert.AreEqual(GetActivityRootId(requestTelemetry.Id), requestTelemetry.Context.Operation.Id);
             Assert.AreNotEqual(requestTelemetry.Context.Operation.Id, requestTelemetry.Id);
             Assert.AreEqual(0, requestTelemetry.Context.GetCorrelationContext().Count);
         }
@@ -160,7 +158,7 @@ namespace Microsoft.ApplicationInsights.Web
             source.Initialize(requestTelemetry);
             Assert.AreEqual("|guid.", requestTelemetry.Context.Operation.ParentId);
             Assert.AreEqual("guid", requestTelemetry.Context.Operation.Id);
-            Assert.AreEqual("guid", AppInsightsActivity.GetRootId(requestTelemetry.Id));
+            Assert.AreEqual("guid", GetActivityRootId(requestTelemetry.Id));
             Assert.AreNotEqual(requestTelemetry.Context.Operation.Id, requestTelemetry.Id);
 
             var correationContext = requestTelemetry.Context.GetCorrelationContext();
@@ -182,7 +180,7 @@ namespace Microsoft.ApplicationInsights.Web
             source.Initialize(requestTelemetry);
             Assert.AreEqual("|guid1.", requestTelemetry.Context.Operation.ParentId);
             Assert.AreEqual("guid2", requestTelemetry.Context.Operation.Id);
-            Assert.AreEqual("guid2", AppInsightsActivity.GetRootId(requestTelemetry.Id));
+            Assert.AreEqual("guid2", GetActivityRootId(requestTelemetry.Id));
 
             Assert.AreEqual("guid2", requestTelemetry.Context.GetCorrelationContext()["Id"]);
         }
@@ -200,7 +198,7 @@ namespace Microsoft.ApplicationInsights.Web
             source.Initialize(requestTelemetry);
             Assert.AreEqual("guid1", requestTelemetry.Context.Operation.ParentId);
             Assert.AreEqual("guid2", requestTelemetry.Context.Operation.Id);
-            Assert.AreEqual("guid2", AppInsightsActivity.GetRootId(requestTelemetry.Id));
+            Assert.AreEqual("guid2", GetActivityRootId(requestTelemetry.Id));
             Assert.AreNotEqual("guid2", requestTelemetry.Id);
 
             var correlationContext = requestTelemetry.Context.GetCorrelationContext();
@@ -217,7 +215,7 @@ namespace Microsoft.ApplicationInsights.Web
             source.Initialize(requestTelemetry);
             Assert.IsNull(requestTelemetry.Context.Operation.ParentId);
             Assert.IsNotNull(requestTelemetry.Context.Operation.Id);
-            Assert.AreEqual(requestTelemetry.Context.Operation.Id, AppInsightsActivity.GetRootId(requestTelemetry.Id));
+            Assert.AreEqual(requestTelemetry.Context.Operation.Id, GetActivityRootId(requestTelemetry.Id));
             Assert.AreNotEqual(requestTelemetry.Context.Operation.Id, requestTelemetry.Id);
             Assert.AreEqual(0, requestTelemetry.Context.GetCorrelationContext().Count);
         }
@@ -225,16 +223,13 @@ namespace Microsoft.ApplicationInsights.Web
         [TestMethod]
         public void InitializeWithInvalidRequestId()
         {
-            var source = new TestableOperationCorrelationTelemetryInitializer(new Dictionary<string, string>
-            {
-                ["Request-Id"] = ""
-            });
+            var source = new TestableOperationCorrelationTelemetryInitializer(new Dictionary<string, string> { ["Request-Id"] = string.Empty });
             var requestTelemetry = source.Telemetry;
 
             source.Initialize(requestTelemetry);
             Assert.IsNull(requestTelemetry.Context.Operation.ParentId);
             Assert.IsNotNull(requestTelemetry.Context.Operation.Id);
-            Assert.AreEqual(requestTelemetry.Context.Operation.Id, AppInsightsActivity.GetRootId(requestTelemetry.Id));
+            Assert.AreEqual(requestTelemetry.Context.Operation.Id, GetActivityRootId(requestTelemetry.Id));
         }
 
         [TestMethod]
@@ -243,8 +238,7 @@ namespace Microsoft.ApplicationInsights.Web
             var source = new TestableOperationCorrelationTelemetryInitializer(new Dictionary<string, string>
             {
                 ["Request-Id"] = "|guid.",
-                ["Correlation-Context"] = $"123,k1=v1,k12345678910111213=v2,k3={Guid.NewGuid()}{Guid.NewGuid()}" 
-                //key length must be less than 16, value length < 42
+                ["Correlation-Context"] = $"123,k1=v1,k12345678910111213=v2,k3={Guid.NewGuid()}{Guid.NewGuid()}" // key length must be less than 16, value length < 42
             });
             var requestTelemetry = source.Telemetry;
 
@@ -255,6 +249,11 @@ namespace Microsoft.ApplicationInsights.Web
             Assert.AreEqual("v1", correationContext["k1"]);
         }
 
+        private static string GetActivityRootId(string telemetryId)
+        {
+            return telemetryId.Substring(1, telemetryId.IndexOf('.') - 1);
+        }
+
         private class TestableOperationCorrelationTelemetryInitializer : OperationCorrelationTelemetryInitializer
         {
             private readonly HttpContext fakeContext;
@@ -262,8 +261,8 @@ namespace Microsoft.ApplicationInsights.Web
 
             public TestableOperationCorrelationTelemetryInitializer(IDictionary<string, string> headers)
             {
-                 this.fakeContext = HttpModuleHelper.GetFakeHttpContext(headers);
-                telemetry = fakeContext.SetOperationHolder().Telemetry;
+                this.fakeContext = HttpModuleHelper.GetFakeHttpContext(headers);
+                this.telemetry = this.fakeContext.SetRequestTelemetry();
             }
 
             public HttpContext FakeContext

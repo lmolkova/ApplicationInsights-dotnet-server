@@ -1,5 +1,4 @@
-﻿
-namespace Microsoft.ApplicationInsights.Web.Helpers
+﻿namespace Microsoft.ApplicationInsights.Web.Helpers
 {
     using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Extensibility;
@@ -8,16 +7,18 @@ namespace Microsoft.ApplicationInsights.Web.Helpers
     {
         public TestOperationHolder(RequestTelemetry telemetry)
         {
-            Telemetry = telemetry;
+            this.Telemetry = telemetry;
         }
+
         public TestOperationHolder()
         {
-            Telemetry = new RequestTelemetry();
+            this.Telemetry = new RequestTelemetry();
         }
+
+        public RequestTelemetry Telemetry { get; }
+
         public void Dispose()
         {
         }
-
-        public RequestTelemetry Telemetry { get; private set; }
     }
 }

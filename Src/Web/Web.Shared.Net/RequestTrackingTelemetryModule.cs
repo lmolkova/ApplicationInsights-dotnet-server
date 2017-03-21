@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace Microsoft.ApplicationInsights.Web
+﻿namespace Microsoft.ApplicationInsights.Web
 {
     using System;
     using System.Collections.Generic;
@@ -65,7 +63,7 @@ namespace Microsoft.ApplicationInsights.Web
                 return string.IsNullOrEmpty(this.ProfileQueryEndpoint) ? this.telemetryChannelEnpoint : this.ProfileQueryEndpoint;
             }
         }
-        
+
         /// <summary>
         /// Implements on begin callback of http module.
         /// </summary>
@@ -82,13 +80,13 @@ namespace Microsoft.ApplicationInsights.Web
                 return;
             }
 
-            var operation = context.ReadOrStartOperationPrivate(telemetryClient);
+            var telemetry = context.GetOrCreateRequestTelemetry();
 
             // NB! Whatever is saved in RequestTelemetry on Begin is not guaranteed to be sent because Begin may not be called; Keep it in context
             // In WCF there will be 2 Begins and 1 End. We need time from the first one
-            if (operation.Telemetry.Timestamp == DateTimeOffset.MinValue)
+            if (telemetry.Timestamp == DateTimeOffset.MinValue)
             {
-                operation.Telemetry.Start();
+                telemetry.Start();
             }
         }
 
@@ -108,36 +106,7 @@ namespace Microsoft.ApplicationInsights.Web
                 return;
             }
 
-            //if CallContext/AsyncLocal was lost after BeginRequest, return it back
-            if (CallContextHelpers.GetCurrentOperationContext() == null)
-            {
-                var currentOperationContext = context.GetOperationCallContext();
-                if (currentOperationContext != null)
-                {
-                    Debug.WriteLine("???");
-                    Debug.WriteLine($" ctx {currentOperationContext.ParentOperationId} {currentOperationContext.RootOperationId}  {currentOperationContext.RootOperationName}");
-                    foreach (var item in currentOperationContext.CorrelationContext)
-                    {
-                        Debug.WriteLine($" ctx {item.Key}={item.Value}");
-                    }
-
-                    CallContextHelpers.SaveOperationContext(currentOperationContext);
-                }
-            }
-            else
-            {
-                var ctx = CallContextHelpers.GetCurrentOperationContext();
-                Debug.WriteLine("<!!!");
-                if (ctx != null)
-                {
-                    Debug.WriteLine($" ctx {ctx.ParentOperationId} {ctx.RootOperationId}  {ctx.RootOperationName}");
-                    foreach (var item in ctx.CorrelationContext)
-                    {
-                        Debug.WriteLine($" ctx {item.Key}={item.Value}");
-                    }
-                    Debug.WriteLine("!!!>");
-                }
-            }
+            context.StartOperationPrivate(this.telemetryClient); 
         }
 
         /// <summary>
@@ -155,8 +124,7 @@ namespace Microsoft.ApplicationInsights.Web
                 return;
             }
 
-            var operation = context.ReadOrStartOperationPrivate(telemetryClient);
-            RequestTelemetry requestTelemetry = operation.Telemetry;
+            RequestTelemetry requestTelemetry = context.GetOrCreateRequestTelemetry();
 
             // Success will be set in Sanitize on the base of ResponseCode 
             if (string.IsNullOrEmpty(requestTelemetry.ResponseCode))
@@ -168,7 +136,6 @@ namespace Microsoft.ApplicationInsights.Web
             {
                 requestTelemetry.Url = context.Request.UnvalidatedGetUrl();
             }
-
 
             if (string.IsNullOrEmpty(requestTelemetry.Context.InstrumentationKey))
             {
@@ -209,7 +176,16 @@ namespace Microsoft.ApplicationInsights.Web
                     requestTelemetry.Source = sourceAppId;
                 }
             }
-            telemetryClient.StopOperation(operation);
+
+            var operation = context.GetOperation();
+            if (operation != null)
+            {
+                this.telemetryClient.StopOperation(operation);
+            }
+            else
+            {
+                this.telemetryClient.TrackRequest(requestTelemetry);
+            }
         }
 
         /// <summary>

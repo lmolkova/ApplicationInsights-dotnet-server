@@ -113,8 +113,6 @@
         [TestMethod]
         public void InitializeDoNotReadCookieFromEmptyValue()
         {
-
-
             var initializer = new TestableUserTelemetryInitializer();
             initializer.FakeContext.AddRequestCookie(new HttpCookie("ai_user", string.Empty));
             var requestTelemetry = initializer.Telemetry;
@@ -134,7 +132,7 @@
 
             public TestableUserTelemetryInitializer()
             {
-                telemetry = fakeContext.SetOperationHolder().Telemetry;
+                this.telemetry = this.fakeContext.SetRequestTelemetry();
             }
 
             public RequestTelemetry Telemetry

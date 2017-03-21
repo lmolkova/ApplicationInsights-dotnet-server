@@ -161,7 +161,7 @@
 
                 this.TraceCallback("OnPreRequestHandlerExecute", httpApplication);
 
-                requestModule?.OnPreRequestHandlerExecute(httpApplication.Context);
+                this.requestModule?.OnPreRequestHandlerExecute(httpApplication.Context);
             }
         }
 

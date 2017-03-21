@@ -6,7 +6,6 @@
     using System.Web;
     using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Web.Helpers;
-    using Microsoft.ApplicationInsights.Web.Implementation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -241,13 +240,14 @@
             public TestableClientIpHeaderTelemetryInitializer(IDictionary<string, string> headers = null)
             {
                 this.platformContext = HttpModuleHelper.GetFakeHttpContext(headers);
-                telemetry = PlatformContext.SetOperationHolder().Telemetry;
+                this.telemetry = this.PlatformContext.SetRequestTelemetry();
             }
 
             public HttpContext PlatformContext
             {
                 get { return this.platformContext; }
             }
+
             public RequestTelemetry Telemetry
             {
                 get { return this.telemetry; }

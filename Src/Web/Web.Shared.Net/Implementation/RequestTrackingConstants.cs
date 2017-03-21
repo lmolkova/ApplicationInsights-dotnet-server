@@ -9,7 +9,7 @@
         /// Name of the HttpContext item containing RequestTelemetry object.
         /// </summary>
         internal const string RequestTelemetryItemName = "Microsoft.ApplicationInsights.RequestTelemetry";
-        internal const string CallContextItemName = "Microsoft.ApplicationInsights.CallContext";
+        internal const string OperationItemName = "Microsoft.ApplicationInsights.RequestOperation";
 
         internal const string EndRequestCallFlag = "Microsoft.ApplicationInsights.EndRequestCallFlag";
 

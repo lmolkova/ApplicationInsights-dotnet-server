@@ -1,11 +1,8 @@
 ﻿namespace Microsoft.ApplicationInsights.Web
 {
-    using System;
-    using System.Globalization;
     using System.Web;
     using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Web.Helpers;
-    using Microsoft.ApplicationInsights.Web.Implementation;
     using Microsoft.ApplicationInsights.Web.TestFramework;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -157,7 +154,7 @@
 
             public TestableAccountIdTelemetryInitializer()
             {
-                telemetry = fakeContext.SetOperationHolder().Telemetry;
+                this.telemetry = this.fakeContext.SetRequestTelemetry();
             }
 
             public HttpContext FakeContext

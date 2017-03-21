@@ -36,7 +36,7 @@
         public const string RequestIdHeader = "Request-Id";
 
         /// <summary>
-        /// Standard Correlation-Context header
+        /// Standard Correlation-Context header.
         /// </summary>
         public const string CorrelationContextHeader = "Correlation-Context";
     }

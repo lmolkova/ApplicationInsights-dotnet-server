@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-
-namespace Microsoft.ApplicationInsights.Common
+﻿namespace Microsoft.ApplicationInsights.Common
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.Diagnostics;
     using System.Globalization;
+    using System.Text;
 
     /// <summary>
     /// WebHeaderCollection extension methods.
@@ -53,12 +52,12 @@ namespace Microsoft.ApplicationInsights.Common
         }
 
         /// <summary>
-        /// For the given header collection, for a given header of name-value type, return list of KeyValuePairs
+        /// For the given header collection, for a given header of name-value type, return list of KeyValuePairs.
         /// </summary>
         /// <param name="headers">Header collection.</param>
         /// <param name="headerName">Name of the header in the collection.</param>
-        /// <returns>List of KeyValuePairs in the given header</returns>
-        public static IEnumerable<KeyValuePair<string,string>> GetNameValueCollectionFromHeader(this NameValueCollection headers, string headerName)
+        /// <returns>List of KeyValuePairs in the given header.</returns>
+        public static IEnumerable<KeyValuePair<string, string>> GetNameValueCollectionFromHeader(this NameValueCollection headers, string headerName)
         {
             if (string.IsNullOrEmpty(headerName))
             {
@@ -69,7 +68,7 @@ namespace Microsoft.ApplicationInsights.Common
 
             if (requiredHeader != null)
             {
-                var values = new List<KeyValuePair<string,string>>();
+                var values = new List<KeyValuePair<string, string>>();
                 var headerValues = requiredHeader.Split(',');
                 foreach (var headerValue in headerValues)
                 {
@@ -79,6 +78,7 @@ namespace Microsoft.ApplicationInsights.Common
                         values.Add(new KeyValuePair<string, string>(key, value));
                     }
                 }
+
                 return values;
             }
 
@@ -86,7 +86,7 @@ namespace Microsoft.ApplicationInsights.Common
         }
 
         /// <summary>
-        /// For the given header collection, adds KeyValuePair to header
+        /// For the given header collection, adds KeyValuePair to header.
         /// </summary>
         /// <param name="headers">Header collection.</param>
         /// <param name="headerName">Name of the header that is to contain the name-value pair.</param>
@@ -142,8 +142,8 @@ namespace Microsoft.ApplicationInsights.Common
         /// </summary>
         /// <param name="headers">Header collection.</param>
         /// <param name="headerName">Name of the header that is to contain the name-value pair.</param>
-        /// <param name="keyValuePairs">List of KeyValuePairs to format into header</param>
-        public static void SetHeaderFromNameValueCollection(this NameValueCollection headers, string headerName, IEnumerable<KeyValuePair<string,string>> keyValuePairs)
+        /// <param name="keyValuePairs">List of KeyValuePairs to format into header.</param>
+        public static void SetHeaderFromNameValueCollection(this NameValueCollection headers, string headerName, IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
             if (string.IsNullOrEmpty(headerName))
             {
@@ -151,16 +151,21 @@ namespace Microsoft.ApplicationInsights.Common
             }
 
             var requiredHeader = headers[headerName];
-            //do not set header if it's present
+
+            // do not set header if it's present
             if (string.IsNullOrEmpty(requiredHeader))
             {
                 StringBuilder headerValue = new StringBuilder();
                 foreach (var pair in keyValuePairs)
                 {
                     if (headerValue.Length > 0)
+                    {
                         headerValue.Append(",");
+                    }
+
                     headerValue.Append(FormatKeyValueHeader(pair.Key, pair.Value));
                 }
+
                 if (headerValue.Length > 0)
                 {
                     headers[headerName] = headerValue.ToString();
@@ -170,7 +175,7 @@ namespace Microsoft.ApplicationInsights.Common
 
         private static bool TryParseKeyValueHeader(string pairString, out string key, out string value)
         {
-            Debug.Assert(pairString != null);
+            Debug.Assert(pairString != null, "pairString is null");
             var keyValue = pairString.Split('=');
 
             if (keyValue.Length == 2)

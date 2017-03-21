@@ -45,18 +45,18 @@
             OperationContext parentContext = requestTelemetry.Context.Operation;
             HttpRequest currentRequest = platformContext.Request;
 
-            //We either have both root Id and parent Id or just rootId.
-            //having single parentId is inconsistent and invalid and we'll update it.
+            // We either have both root Id and parent Id or just rootId.
+            // having single parentId is inconsistent and invalid and we'll update it.
             if (string.IsNullOrEmpty(parentContext.Id))
             {
-                //Parse standard correlation headers 
-                if (!TryParseStandardHeader(requestTelemetry, currentRequest))
+                // Parse standard correlation headers 
+                if (!this.TryParseStandardHeader(requestTelemetry, currentRequest))
                 {
-                    //no, standard headers, parse custom
-                    if (!TryParseCustomHeaders(requestTelemetry, currentRequest))
+                    // no, standard headers, parse custom
+                    if (!this.TryParseCustomHeaders(requestTelemetry, currentRequest))
                     {
-                        //there was nothing in the headers, mimic Activity API behavior
-                        requestTelemetry.Id = AppInsightsActivity.GenerateNewId();
+                        // there was nothing in the headers, mimic Activity API behavior
+                        requestTelemetry.Id = AppInsightsActivity.GenerateRequestId();
                         parentContext.Id = AppInsightsActivity.GetRootId(requestTelemetry.Id);
                     }
                 }
@@ -76,12 +76,14 @@
             }
         }
 
-        private static bool TryParseStandardHeader(
+        private bool TryParseStandardHeader(
             RequestTelemetry requestTelemetry,
             HttpRequest request)
         {
             var parentId = request.UnvalidatedGetHeader(RequestResponseHeaders.RequestIdHeader);
-            if (!string.IsNullOrEmpty(parentId)) //don't bother parsing correlation-context if there was no RequestId
+
+            // don't bother parsing correlation-context if there was no RequestId
+            if (!string.IsNullOrEmpty(parentId))
             {
                 var correlationContext =
                     request.Headers.GetNameValueCollectionFromHeader(RequestResponseHeaders.CorrelationContextHeader);
@@ -102,6 +104,7 @@
                                 requestTelemetry.Context.Operation.Id = item.Value;
                                 requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(item.Value);
                             }
+
                             requestTelemetry.Context.CorrelationContext[item.Key] = item.Value;
                         }
                     }
@@ -116,13 +119,15 @@
 
                 if (string.IsNullOrEmpty(requestTelemetry.Context.Operation.Id))
                 {
-                    //ok, upstream gave us non-hirarchical id and no Id in the correlation context
-                    //We'll use parentId to generate our Ids.
+                    // ok, upstream gave us non-hirarchical id and no Id in the correlation context
+                    // We'll use parentId to generate our Ids.
                     requestTelemetry.Context.Operation.Id = AppInsightsActivity.GetRootId(parentId);
                     requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(parentId);
                 }
+
                 return true;
             }
+
             return false;
         }
 
@@ -143,8 +148,9 @@
                 requestTelemetry.Context.Operation.Id = rootId;
                 requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(rootId);
             }
-            else //we received invalid request with parent, but without root
+            else 
             {
+                // we received invalid request with parent, but without root
                 requestTelemetry.Context.Operation.Id = parentId;
                 requestTelemetry.Id = AppInsightsActivity.GenerateRequestId(parentId);
             }

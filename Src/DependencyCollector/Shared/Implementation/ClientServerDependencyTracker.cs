@@ -3,8 +3,8 @@
     using System;
     using System.Data.SqlClient;
     using System.Net;
+    using Microsoft.ApplicationInsights.Common;
     using Microsoft.ApplicationInsights.DataContracts;
-    using Common;
 
     internal static class ClientServerDependencyTracker
     {

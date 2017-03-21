@@ -324,9 +324,15 @@
                     if (!string.IsNullOrEmpty(parentId))
                     {
                         if (webRequest.Headers[RequestResponseHeaders.StandardParentIdHeader] == null)
+                        {
                             webRequest.Headers.Add(RequestResponseHeaders.StandardParentIdHeader, parentId);
+                        }
+
                         if (webRequest.Headers[RequestResponseHeaders.RequestIdHeader] == null)
+                        {
                             webRequest.Headers.Add(RequestResponseHeaders.RequestIdHeader, telemetry.Id);
+                        }
+
                         if (webRequest.Headers[RequestResponseHeaders.CorrelationContextHeader] == null)
                         {
                             if (telemetry.Context.CorrelationContext != null &&

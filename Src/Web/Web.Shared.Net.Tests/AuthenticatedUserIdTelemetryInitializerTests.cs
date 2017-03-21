@@ -3,7 +3,6 @@
     using System.Web;
     using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Web.Helpers;
-    using Microsoft.ApplicationInsights.Web.Implementation;
     using Microsoft.ApplicationInsights.Web.TestFramework;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -155,7 +154,7 @@
 
             public TestableAuthenticatedUserIdTelemetryInitializer()
             {
-                telemetry = fakeContext.SetOperationHolder().Telemetry;
+                this.telemetry = this.fakeContext.SetRequestTelemetry();
             }
 
             public HttpContext FakeContext

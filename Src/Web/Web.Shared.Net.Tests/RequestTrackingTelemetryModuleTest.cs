@@ -1,18 +1,15 @@
-﻿using System.Diagnostics;
-using System.Runtime.Serialization.Json;
-using System.Threading;
-using Microsoft.ApplicationInsights.DataContracts;
-
-namespace Microsoft.ApplicationInsights.Web
+﻿namespace Microsoft.ApplicationInsights.Web
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Web;
 
     using Common;
     using Microsoft.ApplicationInsights.Channel;
+    using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.ApplicationInsights.Extensibility.Implementation;
     using Microsoft.ApplicationInsights.TestFramework;
@@ -40,7 +37,7 @@ namespace Microsoft.ApplicationInsights.Web
             var startTime = DateTimeOffset.UtcNow;
 
             var context = HttpModuleHelper.GetFakeHttpContext();
-            var requestTelemetry = context.SetOperationHolder().Telemetry;
+            var requestTelemetry = context.SetRequestTelemetry();
             requestTelemetry.Timestamp = startTime;
 
             var module = this.RequestTrackingTelemetryModuleFactory();
@@ -54,7 +51,7 @@ namespace Microsoft.ApplicationInsights.Web
         public void OnBeginRequestSetsTimeIfItWasNotAssignedBefore()
         {
             var context = HttpModuleHelper.GetFakeHttpContext();
-            var requestTelemetry = context.SetOperationHolder().Telemetry;
+            var requestTelemetry = context.SetRequestTelemetry();
             requestTelemetry.Timestamp = default(DateTimeOffset);
 
             var module = this.RequestTrackingTelemetryModuleFactory();
@@ -68,7 +65,7 @@ namespace Microsoft.ApplicationInsights.Web
         public void RequestIdIsAvailableAfterOnBegin()
         {
             var context = HttpModuleHelper.GetFakeHttpContext();
-            var requestTelemetry = context.SetOperationHolder().Telemetry;
+            var requestTelemetry = context.SetRequestTelemetry();
 
             var module = this.RequestTrackingTelemetryModuleFactory();
 
@@ -107,7 +104,6 @@ namespace Microsoft.ApplicationInsights.Web
         public void OnEndSetsDurationToZeroIfBeginWasNotCalled()
         {
             var context = HttpModuleHelper.GetFakeHttpContext();
-            context.SetOperationHolder();
             var module = this.RequestTrackingTelemetryModuleFactory();
             module.Initialize(TelemetryConfiguration.CreateDefault());
             module.OnEndRequest(context);
@@ -119,7 +115,7 @@ namespace Microsoft.ApplicationInsights.Web
         public void OnEndDoesNotOverrideResponseCode()
         {
             var context = HttpModuleHelper.GetFakeHttpContext();
-            context.SetOperationHolder();
+            context.SetRequestTelemetry();
             context.Response.StatusCode = 300;
 
             var module = this.RequestTrackingTelemetryModuleFactory();
@@ -205,7 +201,7 @@ namespace Microsoft.ApplicationInsights.Web
             context.Response.StatusCode = 200;
             context.Handler = new System.Web.Handlers.AssemblyResourceLoader();
 
-            var requestTelemetry = context.SetOperationHolder().Telemetry;
+            var requestTelemetry = context.SetRequestTelemetry();
             requestTelemetry.Start();
 
             var module = this.RequestTrackingTelemetryModuleFactory();
@@ -223,7 +219,7 @@ namespace Microsoft.ApplicationInsights.Web
             context.Response.StatusCode = 200;
             context.Handler = new FakeHttpHandler();
 
-            var requestTelemetry = context.SetOperationHolder().Telemetry;
+            var requestTelemetry = context.SetRequestTelemetry();
             requestTelemetry.Start();
 
             var module = this.RequestTrackingTelemetryModuleFactory();
@@ -240,7 +236,7 @@ namespace Microsoft.ApplicationInsights.Web
             context.Response.StatusCode = 200;
             context.Handler = new FakeHttpHandler();
 
-            var requestTelemetry = context.SetOperationHolder().Telemetry;
+            var requestTelemetry = context.SetRequestTelemetry();
             requestTelemetry.Start();
 
             var module = this.RequestTrackingTelemetryModuleFactory();
@@ -258,7 +254,7 @@ namespace Microsoft.ApplicationInsights.Web
             context.Response.StatusCode = 500;
             context.Handler = new System.Web.Handlers.AssemblyResourceLoader();
 
-            var requestTelemetry = context.SetOperationHolder().Telemetry;
+            var requestTelemetry = context.SetRequestTelemetry();
             requestTelemetry.Start();
 
             var module = this.RequestTrackingTelemetryModuleFactory();
@@ -393,12 +389,15 @@ namespace Microsoft.ApplicationInsights.Web
         }
 
         [TestMethod]
-        public void OnOnPreRequestHandlerExecuteRestoresCallContext()
+        public void OnOnPreRequestHandlerExecuteStartsOperation()
         {
-            Dictionary<string, string> headers = new Dictionary<string, string>();
-            headers.Add(RequestResponseHeaders.RequestIdHeader, "|guid.1");
-            headers.Add(RequestResponseHeaders.CorrelationContextHeader, "k=v");
-            var context = HttpModuleHelper.GetFakeHttpContext(headers);
+            var context = HttpModuleHelper.GetFakeHttpContext();
+
+            var requestTelemetry = new RequestTelemetry();
+            requestTelemetry.Context.Operation.Id = "guid1";
+            requestTelemetry.Context.Operation.ParentId = "|guid1.1";
+            requestTelemetry.Id = "|guid1.1.1";
+            context.SetRequestTelemetry(requestTelemetry);
 
             var module = this.RequestTrackingTelemetryModuleFactory();
             var config = TelemetryConfiguration.CreateDefault();
@@ -408,32 +407,16 @@ namespace Microsoft.ApplicationInsights.Web
             config.InstrumentationKey = Guid.NewGuid().ToString();
             module.Initialize(config);
 
-            var resetEvent = new ManualResetEvent(false);
-            //start on begin processing in child context, so outside of it, we won't have call context
-            ThreadPool.QueueUserWorkItem(o =>
-            {
-                HttpContext.Current = (HttpContext) o;
-                module.OnBeginRequest((HttpContext) o);
-                resetEvent.Set();
-            }, context);
-
-            resetEvent.WaitOne();
-
-            //module stored callcontext
-            Assert.NotNull(context.Items[RequestTrackingConstants.CallContextItemName]);
-
-            var requestTelemetry = context.GetRequestTelemetry();
-            //restore call context
+            // start operation
             module.OnPreRequestHandlerExecute(context);
 
-            //let's check it. If there is a CallContext, child telemetry will be properly filled
+            // let's check it. If there is a CallContext, child telemetry will be properly filled
             config.TelemetryInitializers.Remove(operationTelemetryIntializer);
             var telemetryClient = new TelemetryClient(config);
             using (var dependency = telemetryClient.StartOperation<DependencyTelemetry>("child"))
             {
                 Assert.Equal(requestTelemetry.Context.Operation.Id, dependency.Telemetry.Context.Operation.Id);
                 Assert.Equal(requestTelemetry.Id, dependency.Telemetry.Context.Operation.ParentId);
-                Assert.Equal("v", dependency.Telemetry.Context.Properties["k"]);
             }
         }
 

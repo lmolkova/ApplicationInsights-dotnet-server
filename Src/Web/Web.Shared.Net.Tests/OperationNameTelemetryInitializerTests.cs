@@ -21,6 +21,7 @@
             Assert.AreEqual(string.Empty, requestTelemetry.Name);
         }
 
+        [TestMethod]
         public void TestRequestNameWithControllerAndWithAction()
         {
             var platformContext = HttpModuleHelper.GetFakeHttpContext();
@@ -34,6 +35,7 @@
             Assert.AreEqual("GET Controller/Action", requestName);
         }
 
+        [TestMethod]
         public void TestRequestNameWithNoControllerAndWithAction()
         {
             var platformContext = HttpModuleHelper.GetFakeHttpContext();
@@ -46,6 +48,7 @@
             Assert.AreEqual("GET " + HttpModuleHelper.UrlPath, requestName);
         }
 
+        [TestMethod]
         public void TestRequestNameWithControllerAndNoActionNoParameters()
         {
             var platformContext = HttpModuleHelper.GetFakeHttpContext();
@@ -56,6 +59,7 @@
             Assert.AreEqual("GET Controller", requestName);
         }
 
+        [TestMethod]
         public void TestRequestNameWithControllerAndWithNoActionWithParameters()
         {
             var platformContext = HttpModuleHelper.GetFakeHttpContext();
@@ -70,6 +74,7 @@
             Assert.AreEqual("GET Controller [id1/id2]", requestName);
         }
 
+        [TestMethod]
         public void TestRequestNameWithNoControllerAndWithNoAction()
         {
             var platformContext = HttpModuleHelper.GetFakeHttpContext();
@@ -81,6 +86,7 @@
             Assert.AreEqual("GET " + HttpModuleHelper.UrlPath, requestName);
         }
 
+        [TestMethod]
         public void TestRequestNameRouteDataEmpty()
         {
             var platformContext = HttpModuleHelper.GetFakeHttpContext();
@@ -225,7 +231,7 @@
 
             public TestableOperationNameTelemetryInitializer(RequestTelemetry requestTelemetry = null)
             {
-                telemetry = fakeContext.SetOperationHolder(requestTelemetry).Telemetry;
+                this.telemetry = this.fakeContext.SetRequestTelemetry(requestTelemetry);
             }
 
             public RequestTelemetry Telemetry

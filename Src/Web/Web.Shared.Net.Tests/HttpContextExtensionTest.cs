@@ -26,7 +26,7 @@
         public void GetRequestTelemetryReturnsRequestTelemetryFromItems()
         {
             var context = HttpModuleHelper.GetFakeHttpContext();
-            var expected = context.SetOperationHolder().Telemetry;
+            var expected = context.SetRequestTelemetry();
          
             var actual = context.GetRequestTelemetry();
 

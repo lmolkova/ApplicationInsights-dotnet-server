@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace Microsoft.ApplicationInsights.DependencyCollector
+﻿namespace Microsoft.ApplicationInsights.DependencyCollector
 {
-    using Common;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
+    using Microsoft.ApplicationInsights.Common;
     using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -69,7 +68,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
         }
 
         /// <summary>
-        /// Tests that GetCollectionFromHeaderNoDuplicates gets collection of kvp from existing, non-empty header
+        /// Tests that GetCollectionFromHeaderNoDuplicates gets collection of key-value pairs from existing, non-empty header.
         /// </summary>
         [TestMethod]
         public void GetCollectionFromHeaderNoDuplicates()
@@ -87,7 +86,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
         }
 
         /// <summary>
-        /// Tests that GetCollectionFromHeaderNoDuplicates returns null if header does not exists or is empty
+        /// Tests that GetCollectionFromHeaderNoDuplicates returns null if header does not exists or is empty.
         /// </summary>
         [TestMethod]
         public void GetCollectionFromEmptyHeader()
@@ -101,7 +100,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
         }
 
         /// <summary>
-        /// Tests that GetCollectionFromHeaderNoDuplicates gets collection of kvp from existing, non-empty header with duplicates
+        /// Tests that GetCollectionFromHeaderNoDuplicates gets collection of key-value pairs from existing, non-empty header with duplicates.
         /// </summary>
         [TestMethod]
         public void GetCollectionFromHeaderWithDuplicates()
@@ -117,20 +116,21 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
         }
 
         /// <summary>
-        /// Tests that GetCollectionFromHeaderNoDuplicates gets collection of kvp from existing,
-        /// non-empty invalid header 
+        /// Tests that GetCollectionFromHeaderNoDuplicates gets collection of key-value pairs from existing
+        /// non-empty invalid header.
         /// </summary>
         [TestMethod]
         public void GetCollectionFromInvalidHeader()
         {
             WebHeaderCollection headers = new WebHeaderCollection();
-            //no valid items
+
+            // no valid items
             headers["Correlation-Context"] = "k1, some string";
 
             var correlationContext = headers.GetNameValueCollectionFromHeader("Correlation-Context");
             Assert.IsTrue(correlationContext == null || !correlationContext.Any());
 
-            //some valid items
+            // some valid items
             headers["Correlation-Context"] = "k1=v1, some string";
 
             correlationContext = headers.GetNameValueCollectionFromHeader("Correlation-Context");
@@ -151,12 +151,14 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
         public void SetNameValueHeaderWithNonEmptyCollectionSetsHeader()
         {
             WebHeaderCollection headers = new WebHeaderCollection();
-            headers.SetHeaderFromNameValueCollection("Correlation-Context", new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("k1 ","v1"),
-                new KeyValuePair<string, string>("k2"," v2"),
-                new KeyValuePair<string, string>("k1","v3")
-            });
+            headers.SetHeaderFromNameValueCollection(
+                "Correlation-Context", 
+                new List<KeyValuePair<string, string>>
+                {
+                    new KeyValuePair<string, string>("k1 ", "v1"),
+                    new KeyValuePair<string, string>("k2", " v2"),
+                    new KeyValuePair<string, string>("k1", "v3")
+                });
             Assert.IsNotNull(headers["Correlation-Context"]);
             Assert.AreEqual("k1=v1,k2=v2,k1=v3", headers["Correlation-Context"]);
         }

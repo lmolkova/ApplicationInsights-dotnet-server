@@ -134,7 +134,7 @@
 
             public TestableSessionTelemetryInitializer(RequestTelemetry requestTelemetry = null)
             {
-                telemetry = fakeContext.SetOperationHolder(requestTelemetry).Telemetry;
+                this.telemetry = this.fakeContext.SetRequestTelemetry(requestTelemetry);
             }
 
             public RequestTelemetry Telemetry
