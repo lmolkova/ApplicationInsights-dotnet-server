@@ -3,7 +3,7 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.Data.SqlClient;
-#if NET45
+#if NET45 || NET46
     using System.Diagnostics.Tracing;
 #endif
     using System.Globalization;

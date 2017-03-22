@@ -100,8 +100,9 @@
                     {
                         this.AddCorreleationHeaderOnSendRequestHeaders(httpApplication);
                     }
-
+#if !NET46
                     this.requestModule.OnBeginRequest(httpApplication.Context);
+#endif
                 }
 
                 // Kept for backcompat. Should be removed in 2.3 SDK
@@ -171,7 +172,7 @@
             {
                 var httpApplication = (HttpApplication)sender;
                 this.TraceCallback("OnEndRequest", httpApplication);
-
+#if !NET46
                 if (this.IsFirstRequest(httpApplication))
                 {
                     if (this.exceptionModule != null)
@@ -183,7 +184,7 @@
                     {
                         this.requestModule.OnEndRequest(httpApplication.Context);
                     }
-
+#endif
                     // Kept for backcompat. Should be removed in 2.3 SDK
                     WebEventsPublisher.Log.OnError();
                     WebEventsPublisher.Log.OnEnd();
@@ -195,6 +196,7 @@
             }
         }
 
+#if !NET46
         private bool IsFirstRequest(HttpApplication application)
         {
             var firstRequest = true;
@@ -216,6 +218,7 @@
 
             return firstRequest;
         }
+#endif
 
         private void TraceCallback(string callback, HttpApplication application)
         {

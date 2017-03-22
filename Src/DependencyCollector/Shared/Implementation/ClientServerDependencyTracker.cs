@@ -2,6 +2,9 @@
 {
     using System;
     using System.Data.SqlClient;
+#if NET46
+    using System.Diagnostics;
+#endif
     using System.Net;
     using Microsoft.ApplicationInsights.Common;
     using Microsoft.ApplicationInsights.DataContracts;
@@ -22,8 +25,19 @@
             var telemetry = new DependencyTelemetry();
             telemetry.Start();
             telemetryClient.Initialize(telemetry);
-            telemetry.Id = AppInsightsActivity.GenerateDependencyId(telemetry.Context.Operation.ParentId);
+#if NET46
+            // DependencyCollector with EventSource/Profiler must not be used when there is an DiagnosticSource instrumentation of HttpClient/SqlClient
+            // so Appinsights must either use one or another, depending on the platform
+            var activity = new Activity(telemetry.Name).Start();
 
+            telemetryClient.Initialize(telemetry);
+
+            // we stop activity immediately since duration is handled by Telemetry and there is nothing we use for Activity so far
+            activity.Stop();
+#else
+            telemetryClient.Initialize(telemetry);
+            telemetry.Id = AppInsightsActivity.GenerateDependencyId(telemetry.Context.Operation.ParentId);
+#endif
             PretendProfilerIsAttached = false;
             return telemetry;
         }

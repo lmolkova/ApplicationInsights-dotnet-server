@@ -5,7 +5,7 @@
     using System.Data;
     using System.Data.SqlClient;
     using System.Diagnostics;
-#if NET45
+#if NET45 || NET46
     using System.Diagnostics.Tracing;
 #endif
     using System.Globalization;
