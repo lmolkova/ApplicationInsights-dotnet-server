@@ -1,4 +1,5 @@
-﻿namespace Microsoft.ApplicationInsights.Web
+﻿#if !NET46
+namespace Microsoft.ApplicationInsights.Web
 {
     using System;
     using System.Collections.Generic;
@@ -21,7 +22,7 @@
         private TelemetryClient telemetryClient;
         private bool correlationHeadersEnabled = true;
         private string telemetryChannelEnpoint;
-        private CorrelationIdLookupHelper correlationIdLookupHelper;
+
 
         /// <summary>
         /// Gets the list of handler types for which requests telemetry will not be collected
@@ -321,3 +322,4 @@
         }
     }
 }
+#endif

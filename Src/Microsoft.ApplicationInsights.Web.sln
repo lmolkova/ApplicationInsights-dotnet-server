@@ -126,6 +126,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyCollector.Net46.T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.Net46", "Web\Web.Net46\Web.Net46.csproj", "{BDE94232-ABDF-4A6E-A978-3952FF918562}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.Net46.Tests", "Web\Web.Net46.Tests\Web.Net46.Tests.csproj", "{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		PerformanceCollector\Shared\Shared.projitems*{092a02b5-9acc-48b5-b317-428f71257196}*SharedItemsImports = 13
@@ -135,6 +137,7 @@ Global
 		Web\Web.Shared.Net\Web.Shared.Net.projitems*{2043d5bb-d20d-4c87-be2f-b6c6bb396f48}*SharedItemsImports = 4
 		DependencyCollector\Shared.Tests\DependencyCollector.Shared.Tests.projitems*{257fce5a-0779-45a5-b541-0ce43d79d009}*SharedItemsImports = 4
 		WindowsServer\WindowsServer.Shared\WindowsServer.Shared.projitems*{2ee203ef-573e-458d-9a4f-4810aa44ed00}*SharedItemsImports = 4
+		Web\Web.Shared.Net.Tests\Web.Shared.Net.Tests.projitems*{342a7a68-87c0-4f24-8d7e-b4bad27fffc6}*SharedItemsImports = 4
 		Web\Web.Shared.Net\Web.Shared.Net.projitems*{395e03bb-d061-4c9d-9d47-18676566444d}*SharedItemsImports = 13
 		DependencyCollector\Shared.Tests\DependencyCollector.Shared.Tests.projitems*{3c694472-e6b9-4b31-98a2-432f46b47161}*SharedItemsImports = 4
 		WindowsServer\WindowsServer.Shared\WindowsServer.Shared.projitems*{579f42e8-b711-411e-be52-4a3fd208507f}*SharedItemsImports = 13
@@ -396,6 +399,14 @@ Global
 		{BDE94232-ABDF-4A6E-A978-3952FF918562}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BDE94232-ABDF-4A6E-A978-3952FF918562}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{BDE94232-ABDF-4A6E-A978-3952FF918562}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -437,5 +448,6 @@ Global
 		{80FEEFDD-0F33-4C0C-9D30-4EA8DCB5AFE0} = {DF56FBAD-8745-404B-94A1-E83BFC4AD7CB}
 		{CF4478D3-03E6-462A-AD4F-CFA0546AC3FF} = {DF56FBAD-8745-404B-94A1-E83BFC4AD7CB}
 		{BDE94232-ABDF-4A6E-A978-3952FF918562} = {1A75535C-B8E5-4C31-BC6E-50456C8C4052}
+		{342A7A68-87C0-4F24-8D7E-B4BAD27FFFC6} = {1A75535C-B8E5-4C31-BC6E-50456C8C4052}
 	EndGlobalSection
 EndGlobal

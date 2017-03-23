@@ -161,8 +161,9 @@
                 HttpApplication httpApplication = (HttpApplication)sender;
 
                 this.TraceCallback("OnPreRequestHandlerExecute", httpApplication);
-
+#if !NET46
                 this.requestModule?.OnPreRequestHandlerExecute(httpApplication.Context);
+#endif
             }
         }
 
@@ -172,9 +173,9 @@
             {
                 var httpApplication = (HttpApplication)sender;
                 this.TraceCallback("OnEndRequest", httpApplication);
-#if !NET46
                 if (this.IsFirstRequest(httpApplication))
                 {
+#if !NET46
                     if (this.exceptionModule != null)
                     {
                         this.exceptionModule.OnError(httpApplication.Context);
@@ -196,7 +197,6 @@
             }
         }
 
-#if !NET46
         private bool IsFirstRequest(HttpApplication application)
         {
             var firstRequest = true;
@@ -218,7 +218,6 @@
 
             return firstRequest;
         }
-#endif
 
         private void TraceCallback(string callback, HttpApplication application)
         {

@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FE97E6BB-7C7E-4503-AF35-EBBBEDEB850A}</ProjectGuid>
+    <ProjectGuid>{BDE94232-ABDF-4A6E-A978-3952FF918562}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
@@ -28,9 +28,14 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\packages\System.Diagnostics.DiagnosticSource.4.4.0-beta-25122-02\lib\net46\System.Diagnostics.DiagnosticSource.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.Management" />
     <Reference Include="System.Net" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
@@ -40,6 +45,8 @@
   <ItemGroup>
     <Compile Include="..\Web.Net45\Implementation\HttpRequestExtensions.cs" />
     <Compile Include="..\Web.Net45\Implementation\SdkVersionUtils.cs" />
+    <Compile Include="RequestTrackingTelemetryModule.cs" />
+    <Compile Include="..\..\Common\ActivityTelemetryInitializer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

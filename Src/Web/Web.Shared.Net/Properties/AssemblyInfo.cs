@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 
 [assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.Web.Net40.Tests, PublicKey=" + Microsoft.ApplicationInsights.Web.AssemblyInfo.PublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.Web.Net45.Tests, PublicKey=" + Microsoft.ApplicationInsights.Web.AssemblyInfo.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.ApplicationInsights.Web.Net46.Tests, PublicKey=" + Microsoft.ApplicationInsights.Web.AssemblyInfo.PublicKey)]
 
 namespace Microsoft.ApplicationInsights.Web
 {

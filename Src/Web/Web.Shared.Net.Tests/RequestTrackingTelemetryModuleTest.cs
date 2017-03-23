@@ -1,4 +1,5 @@
-﻿namespace Microsoft.ApplicationInsights.Web
+﻿#if !NET46
+namespace Microsoft.ApplicationInsights.Web
 {
     using System;
     using System.Collections.Generic;
@@ -448,3 +449,4 @@
         }
     }
 }
+#endif
