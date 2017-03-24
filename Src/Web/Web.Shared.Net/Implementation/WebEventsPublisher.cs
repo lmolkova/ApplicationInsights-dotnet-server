@@ -4,7 +4,7 @@
 #if NET40
     using Microsoft.Diagnostics.Tracing;
 #endif
-#if NET45
+#if NET45 || NET46
     using System.Diagnostics.Tracing;
 #endif
 

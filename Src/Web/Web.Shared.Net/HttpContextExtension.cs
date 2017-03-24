@@ -1,7 +1,6 @@
 ﻿namespace System.Web
 {
     using Microsoft.ApplicationInsights.DataContracts;
-    using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.ApplicationInsights.Web.Implementation;
 
     /// <summary>
@@ -16,22 +15,7 @@
         /// <returns>Request telemetry instance or null.</returns>
         public static RequestTelemetry GetRequestTelemetry(this HttpContext context)
         {
-            if (context == null)
-            {
-                return null;
-            }
-
-            var requestTelemetry = context.Items[RequestTrackingConstants.RequestTelemetryItemName] as RequestTelemetry;
-
-/*            if (requestTelemetry == null)
-            {
-                var operation =
-                    context.Items[RequestTrackingConstants.OperationItemName] as IOperationHolder<RequestTelemetry>;
-
-                return operation?.Telemetry;
-            }*/
-
-            return requestTelemetry;
+            return context?.Items[RequestTrackingConstants.RequestTelemetryItemName] as RequestTelemetry;
         }
     }
 }

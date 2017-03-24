@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -9,7 +9,6 @@ using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.Web;
 using Microsoft.ApplicationInsights.Web.Helpers;
-using Microsoft.ApplicationInsights.Web.Implementation;
 using Microsoft.ApplicationInsights.Web.TestFramework;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -34,6 +33,7 @@ namespace Microsoft.ApplicationInsights
                 InstrumentationKey = Guid.NewGuid().ToString(),
                 TelemetryChannel = moduleChannel
             };
+            config.TelemetryInitializers.Add(new ActivityTelemetryInitializer());
             this.module = new RequestTrackingTelemetryModule();
             this.module.Initialize(config);
         }
@@ -49,8 +49,6 @@ namespace Microsoft.ApplicationInsights
         public void StartAndStopActivityTracksRequest()
         {
             HttpContext.Current = HttpModuleHelper.GetFakeHttpContext();
-
-            TelemetryConfiguration.Active.TelemetryInitializers.Add(new ActivityTelemetryInitializer());
 
             this.source.StartActivity();
 
@@ -75,8 +73,6 @@ namespace Microsoft.ApplicationInsights
         {
             HttpContext.Current = HttpModuleHelper.GetFakeHttpContext();
 
-            TelemetryConfiguration.Active.TelemetryInitializers.Add(new ActivityTelemetryInitializer());
-
             var activity = new Activity(ActivityName);
             activity.Start();
 
@@ -92,25 +88,6 @@ namespace Microsoft.ApplicationInsights
         }
 
         [TestMethod]
-        public void StopDoesNotUpdateUrlAndStatusCodeIfSetBefore()
-        {
-            HttpContext.Current = HttpModuleHelper.GetFakeHttpContext();
-            TelemetryConfiguration.Active.TelemetryInitializers.Add(new ActivityTelemetryInitializer());
-
-            this.source.StartActivity();
-            var requestTelemetry = HttpContext.Current.GetRequestTelemetry();
-
-            requestTelemetry.ResponseCode = "response_code";
-            requestTelemetry.Url = new Uri("http://bing.com");
-            this.source.StopActivity();
-
-            Assert.AreEqual(1, items.Count);
-            var trackedRequestTelemetry = items[0] as RequestTelemetry;
-            Assert.AreEqual(requestTelemetry.ResponseCode, trackedRequestTelemetry.ResponseCode);
-            Assert.AreEqual(requestTelemetry.Url, trackedRequestTelemetry.Url);
-        }
-
-        [TestMethod]
         public void StartActivityStoresAndStartsRequestTelemetry()
         {
             HttpContext.Current = HttpModuleHelper.GetFakeHttpContext();
@@ -121,94 +98,23 @@ namespace Microsoft.ApplicationInsights
             Assert.IsTrue(DateTimeOffset.UtcNow >= requestTelemetry.Timestamp);
         }
 
-        [TestMethod]
-        public void RestoredActivityIsNotTracked()
-        {
-            HttpContext.Current = HttpModuleHelper.GetFakeHttpContext();
-
-            TelemetryConfiguration.Active.TelemetryInitializers.Add(new ActivityTelemetryInitializer());
-            this.source.StartActivity();
-            var activity = Activity.Current;
-            this.source.StartActivity(isRestored:true);
-            this.source.StopActivity(true);
-            this.source.StopActivity();
-            Assert.AreEqual(1, items.Count);
-            var requestTelemetry = items[0] as RequestTelemetry;
-            Assert.IsNotNull(requestTelemetry);
-
-            Assert.AreEqual(activity.RootId, requestTelemetry.Context.Operation.Id);
-            Assert.AreEqual(activity.ParentId, requestTelemetry.Context.Operation.ParentId);
-            Assert.AreEqual(activity.Id, requestTelemetry.Id);
-        }
-
-        [TestMethod]
-        public void RequestAndExceptionAreTrackedOnError()
-        {
-            HttpContext.Current = HttpModuleHelper.GetFakeHttpContext();
-            TelemetryConfiguration.Active.TelemetryInitializers.Add(new ActivityTelemetryInitializer());
-
-            this.source.StartActivity();
-
-            var activity = Activity.Current;
-
-            var exception = new Exception("123");
-            this.source.SendException(exception);
-            this.source.StopActivity();
-            Assert.AreEqual(2, items.Count);
-            var exceptionTelemetry = items[0] as ExceptionTelemetry;
-            var requestTelemetry = items[1] as RequestTelemetry;
-            Assert.IsNotNull(exceptionTelemetry);
-            Assert.IsNotNull(requestTelemetry);
-
-            Assert.AreEqual(activity.RootId, exceptionTelemetry.Context.Operation.Id);
-            Assert.AreEqual(activity.ParentId, exceptionTelemetry.Context.Operation.ParentId);
-            Assert.AreSame(exception, exceptionTelemetry.Exception);
-
-            Assert.AreEqual(activity.RootId, requestTelemetry.Context.Operation.Id);
-            Assert.AreEqual(activity.ParentId, requestTelemetry.Context.Operation.ParentId);
-            Assert.AreEqual(activity.Id, requestTelemetry.Id);
-        }
-
         private const string ActivityName = "Microsoft.AspNet.HttpReqIn";
         private class TestDiagnosticSource
         {
             private readonly DiagnosticSource testSource = new DiagnosticListener("Microsoft.AspNet.Correlation");
 
-            public void StartActivity(Activity activity = null, bool isRestored = false)
+            public void StartActivity(Activity activity = null)
             {
-                if (activity == null)
-                {
-                    activity = new Activity(ActivityName);
-                }
-
-                object payload = new {};
-                if (isRestored)
-                {
-                    payload = new {IsRestored = true};
-                }
-
-                testSource.StartActivity(activity, payload);
+                 testSource.StartActivity(activity ?? new Activity(ActivityName), new { });
             }
 
-            public void StopActivity(bool isRestored = false)
+            public void StopActivity()
             {
                 Debug.Assert(Activity.Current != null);
 
-                object payload = new { };
-                if (isRestored)
-                {
-                    payload = new { IsRestored = true };
-                }
-
-                testSource.StopActivity(Activity.Current, payload);
-            }
-
-            public void SendException(Exception ex)
-            {
-                Debug.Assert(Activity.Current != null);
-
-                testSource.Write("Microsoft.AspNet.Exception", new {Exception = ex});
+                testSource.StopActivity(Activity.Current, new {});
             }
         }
     }
 }
+*/

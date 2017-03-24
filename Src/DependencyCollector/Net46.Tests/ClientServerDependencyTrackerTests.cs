@@ -1,16 +1,11 @@
 ﻿namespace Microsoft.ApplicationInsights.DependencyCollector
 {
     using System;
-    using System.Collections.Generic;
-    using System.Data.SqlClient;
     using System.Diagnostics;
-    using System.Net;
-    using Microsoft.ApplicationInsights.Channel;
     using Microsoft.ApplicationInsights.Common;
     using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.ApplicationInsights.DependencyCollector.Implementation;
     using Microsoft.ApplicationInsights.TestFramework;
-    using Microsoft.ApplicationInsights.Web.TestFramework;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -51,14 +46,14 @@
         public void BeginWebTrackingWithParentActivity()
         {
             var parentActivity = new Activity("test");
-            parentActivity.SetParentId("|guid.");
+            parentActivity.SetParentId("|guid.1234_");
             parentActivity.AddBaggage("k", "v");
 
             parentActivity.Start();
 
             var telemetry = ClientServerDependencyTracker.BeginTracking(this.telemetryClient);
-            Assert.AreEqual("|guid.1", telemetry.Context.Operation.ParentId);
-            Assert.AreEqual("guid", telemetry.Context.Operation.Id);
+            Assert.AreEqual(parentActivity.Id, telemetry.Context.Operation.ParentId);
+            Assert.AreEqual(parentActivity.RootId, telemetry.Context.Operation.Id);
 
             var correlationContext = telemetry.Context.GetCorrelationContext();
             Assert.AreEqual(1, correlationContext.Count);

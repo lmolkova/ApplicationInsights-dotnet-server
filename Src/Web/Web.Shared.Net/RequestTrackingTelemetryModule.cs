@@ -1,8 +1,10 @@
-﻿#if !NET46
-namespace Microsoft.ApplicationInsights.Web
+﻿namespace Microsoft.ApplicationInsights.Web
 {
     using System;
     using System.Collections.Generic;
+#if NET46
+    using System.Diagnostics;
+#endif
     using System.Globalization;
     using System.Web;
 
@@ -22,7 +24,7 @@ namespace Microsoft.ApplicationInsights.Web
         private TelemetryClient telemetryClient;
         private bool correlationHeadersEnabled = true;
         private string telemetryChannelEnpoint;
-
+        private CorrelationIdLookupHelper correlationIdLookupHelper;
 
         /// <summary>
         /// Gets the list of handler types for which requests telemetry will not be collected
@@ -82,17 +84,22 @@ namespace Microsoft.ApplicationInsights.Web
             }
 
             var telemetry = context.ReadOrCreateRequestTelemetryPrivate();
-
+            
             // NB! Whatever is saved in RequestTelemetry on Begin is not guaranteed to be sent because Begin may not be called; Keep it in context
             // In WCF there will be 2 Begins and 1 End. We need time from the first one
             if (telemetry.Timestamp == DateTimeOffset.MinValue)
             {
                 telemetry.Start();
             }
+#if !NET46
+            RestoreCallContext(telemetry);
+#endif
         }
 
         /// <summary>
-        /// Implements on begin callback of http module.
+        /// Implements on PreRequestHandlerExecute callback of http module
+        /// that is executed right before the handler and restores any execution context 
+        /// if it was lost in native/managed thread switches
         /// </summary>
         public void OnPreRequestHandlerExecute(HttpContext context)
         {
@@ -107,19 +114,54 @@ namespace Microsoft.ApplicationInsights.Web
                 return;
             }
 
-            var requestTelemetry = context.ReadOrCreateRequestTelemetryPrivate();
-            var operationContext = CallContextHelpers.GetCurrentOperationContext();
-            if (operationContext == null)
+#if !NET46
+            if (CallContextHelpers.GetCurrentOperationContext() == null)
             {
-                operationContext = new OperationContextForCallContext
-                {
-                    RootOperationId = requestTelemetry.Context.Operation.Id,
-                    ParentOperationId = requestTelemetry.Id,
-                    CorrelationContext = requestTelemetry.Context.CorrelationContext
-                };
-                CallContextHelpers.SaveOperationContext(operationContext);
+                RestoreCallContext(context.GetRequestTelemetry());
             }
+#else
+            if (Activity.Current == null)
+            {
+                var lostActivity = context.Items[RequestTrackingConstants.ActivityItemName] as Activity;
+                if (lostActivity != null)
+                {
+                    RestoreActivity(lostActivity);
+                }
+            }
+#endif
         }
+
+        /// <summary>
+        /// Implements on PostRequestHandlerExecute callback of http module
+        /// that is executed right after the handler and clean up child context 
+        /// </summary>
+  /*      public void OnPostRequestHandlerExecute(HttpContext context)
+        {
+            if (this.telemetryClient == null)
+            {
+                throw new InvalidOperationException("Initialize has not been called on this module yet.");
+            }
+
+            if (context == null)
+            {
+                WebEventSource.Log.NoHttpContextWarning();
+                return;
+            }
+
+#if !NET46
+            var telemetry = context.GetRequestTelemetry();
+            if (telemetry != null)
+            {
+                var parentContext = new OperationContextForCallContext
+                {
+                    RootOperationId = telemetry.Context.Operation.Id,
+                    ParentOperationId = telemetry.Context.Operation.ParentId,
+                    CorrelationContext = telemetry.Context.CorrelationContext
+                };
+                CallContextHelpers.RestoreOperationContext(parentContext);;
+            }
+#endif
+        }*/
 
         /// <summary>
         /// Implements on end callback of http module.
@@ -135,6 +177,13 @@ namespace Microsoft.ApplicationInsights.Web
             {
                 return;
             }
+#if !NET46
+            // we use OperationContextCallContext to store rootId, parentId, etc for the 
+            // child telemetry items tracked within the scope of this request
+            // for the request itself, we have already parsed them from the request
+            // and it's time to clean it
+            CleanupCallContext();
+#endif
 
             RequestTelemetry requestTelemetry = context.ReadOrCreateRequestTelemetryPrivate();
 
@@ -158,38 +207,13 @@ namespace Microsoft.ApplicationInsights.Web
 
             if (string.IsNullOrEmpty(requestTelemetry.Source) && context.Request.Headers != null)
             {
-                string sourceAppId = null;
-
-                try
-                {
-                    sourceAppId = context.Request.Headers.GetNameValueHeaderValue(RequestResponseHeaders.RequestContextHeader, RequestResponseHeaders.RequestContextSourceKey);
-                }
-                catch (Exception ex)
-                {
-                    CrossComponentCorrelationEventSource.Log.GetHeaderFailed(ex.ToInvariantString());
-                }
-                
-                bool correlationIdLookupHelperInitialized = this.TryInitializeCorrelationHelperIfNotInitialized();
-
-                string currentComponentAppId = string.Empty;
-                bool foundMyAppId = false;
-                if (!string.IsNullOrEmpty(requestTelemetry.Context.InstrumentationKey) && correlationIdLookupHelperInitialized)
-                {
-                    foundMyAppId = this.correlationIdLookupHelper.TryGetXComponentCorrelationId(requestTelemetry.Context.InstrumentationKey, out currentComponentAppId);
-                }
-
-                // If the source header is present on the incoming request,
-                // and it is an external component (not the same ikey as the one used by the current component),
-                // then populate the source field.
-                if (!string.IsNullOrEmpty(sourceAppId)
-                    && foundMyAppId
-                    && sourceAppId != currentComponentAppId)
-                {
-                    requestTelemetry.Source = sourceAppId;
-                }
+                SetTelemetrySourceFromRequestHeaders(context, requestTelemetry);
             }
 
             this.telemetryClient.TrackRequest(requestTelemetry);
+#if NET46
+            StopActivity();
+#endif
         }
 
         /// <summary>
@@ -281,6 +305,28 @@ namespace Microsoft.ApplicationInsights.Web
             this.correlationIdLookupHelper = correlationIdLookupHelper;
         }
 
+#if !NET46
+        /// <summary>
+        /// Cleans up call context
+        /// </summary>
+        internal void CleanupCallContext()
+        {
+            CallContextHelpers.SaveOperationContext(null);
+        }
+#else
+        /// <summary>
+        /// Stops all active activities
+        /// </summary>
+        internal void StopActivity()
+        {
+
+            while (Activity.Current != null)
+            {
+                Activity.Current.Stop();
+            }
+    }
+#endif
+
         /// <summary>
         /// Checks whether or not handler is a transfer handler.
         /// </summary>
@@ -304,6 +350,34 @@ namespace Microsoft.ApplicationInsights.Web
             return false;
         }
 
+#if !NET46
+        private void RestoreCallContext(RequestTelemetry requestTelemetry)
+        {
+            var operationContext = new OperationContextForCallContext
+            {
+                RootOperationId = requestTelemetry.Context.Operation.Id,
+                ParentOperationId = requestTelemetry.Id,
+                CorrelationContext = requestTelemetry.Context.CorrelationContext
+            };
+            CallContextHelpers.SaveOperationContext(operationContext);
+        }
+#endif
+
+#if NET46
+        private void RestoreActivity(Activity lostActivity)
+        {
+            Debug.Assert(lostActivity != null);
+            var restoredActivity = new Activity("HttpIn");
+            restoredActivity.SetParentId(lostActivity.Id);
+            restoredActivity.SetStartTime(lostActivity.StartTimeUtc);
+            foreach(var item in lostActivity.Baggage)
+            {
+                restoredActivity.AddBaggage(item.Key, item.Value);
+            }
+            restoredActivity.Start();
+        }
+#endif
+
         private bool TryInitializeCorrelationHelperIfNotInitialized()
         {
             try
@@ -320,6 +394,38 @@ namespace Microsoft.ApplicationInsights.Web
                 return false;
             }
         }
+
+        internal void SetTelemetrySourceFromRequestHeaders(HttpContext context, RequestTelemetry requestTelemetry)
+        {
+            string sourceAppId = null;
+
+            try
+            {
+                sourceAppId = context.Request.Headers.GetNameValueHeaderValue(RequestResponseHeaders.RequestContextHeader, RequestResponseHeaders.RequestContextSourceKey);
+            }
+            catch (Exception ex)
+            {
+                CrossComponentCorrelationEventSource.Log.GetHeaderFailed(ex.ToInvariantString());
+            }
+
+            bool correlationIdLookupHelperInitialized = this.TryInitializeCorrelationHelperIfNotInitialized();
+
+            string currentComponentAppId = string.Empty;
+            bool foundMyAppId = false;
+            if (!string.IsNullOrEmpty(requestTelemetry.Context.InstrumentationKey) && correlationIdLookupHelperInitialized)
+            {
+                foundMyAppId = this.correlationIdLookupHelper.TryGetXComponentCorrelationId(requestTelemetry.Context.InstrumentationKey, out currentComponentAppId);
+            }
+
+            // If the source header is present on the incoming request,
+            // and it is an external component (not the same ikey as the one used by the current component),
+            // then populate the source field.
+            if (!string.IsNullOrEmpty(sourceAppId)
+                && foundMyAppId
+                && sourceAppId != currentComponentAppId)
+            {
+                requestTelemetry.Source = sourceAppId;
+            }
+        }
     }
 }
-#endif

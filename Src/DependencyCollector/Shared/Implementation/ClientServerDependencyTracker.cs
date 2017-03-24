@@ -24,11 +24,10 @@
         {
             var telemetry = new DependencyTelemetry();
             telemetry.Start();
-            telemetryClient.Initialize(telemetry);
 #if NET46
             // DependencyCollector with EventSource/Profiler must not be used when there is an DiagnosticSource instrumentation of HttpClient/SqlClient
             // so Appinsights must either use one or another, depending on the platform
-            var activity = new Activity(telemetry.Name).Start();
+            var activity = new Activity("HttpOut").Start();
 
             telemetryClient.Initialize(telemetry);
 

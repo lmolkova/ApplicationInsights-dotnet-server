@@ -70,6 +70,7 @@
                     context.BeginRequest += this.OnBeginRequest;
                     context.EndRequest += this.OnEndRequest;
                     context.PreRequestHandlerExecute += this.OnPreRequestHandlerExecute;
+                    //context.PostRequestHandlerExecute += this.OnPostRequestHandlerExecute;
                 }
                 catch (Exception exc)
                 {
@@ -100,9 +101,7 @@
                     {
                         this.AddCorreleationHeaderOnSendRequestHeaders(httpApplication);
                     }
-#if !NET46
                     this.requestModule.OnBeginRequest(httpApplication.Context);
-#endif
                 }
 
                 // Kept for backcompat. Should be removed in 2.3 SDK
@@ -161,11 +160,22 @@
                 HttpApplication httpApplication = (HttpApplication)sender;
 
                 this.TraceCallback("OnPreRequestHandlerExecute", httpApplication);
-#if !NET46
+
                 this.requestModule?.OnPreRequestHandlerExecute(httpApplication.Context);
-#endif
             }
         }
+
+        /*private void OnPostRequestHandlerExecute(object sender, EventArgs eventArgs)
+        {
+            if (this.isEnabled)
+            {
+                HttpApplication httpApplication = (HttpApplication)sender;
+
+                this.TraceCallback("OnPreRequestHandlerExecute", httpApplication);
+
+                this.requestModule?.OnPostRequestHandlerExecute(httpApplication.Context);
+            }
+        }*/
 
         private void OnEndRequest(object sender, EventArgs eventArgs)
         {
@@ -175,17 +185,15 @@
                 this.TraceCallback("OnEndRequest", httpApplication);
                 if (this.IsFirstRequest(httpApplication))
                 {
-#if !NET46
                     if (this.exceptionModule != null)
                     {
                         this.exceptionModule.OnError(httpApplication.Context);
                     }
-
                     if (this.requestModule != null)
                     {
                         this.requestModule.OnEndRequest(httpApplication.Context);
                     }
-#endif
+
                     // Kept for backcompat. Should be removed in 2.3 SDK
                     WebEventsPublisher.Log.OnError();
                     WebEventsPublisher.Log.OnEnd();
