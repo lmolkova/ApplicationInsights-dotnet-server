@@ -2,9 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-#if NET46
-    using System.Diagnostics;
-#endif
     using System.Globalization;
     using System.Web;
 
@@ -91,15 +88,12 @@
             {
                 telemetry.Start();
             }
-#if !NET46
-            RestoreCallContext(telemetry);
-#endif
         }
 
         /// <summary>
         /// Implements on PreRequestHandlerExecute callback of http module
         /// that is executed right before the handler and restores any execution context 
-        /// if it was lost in native/managed thread switches
+        /// if it was lost in native/managed thread switches.
         /// </summary>
         public void OnPreRequestHandlerExecute(HttpContext context)
         {
@@ -114,54 +108,8 @@
                 return;
             }
 
-#if !NET46
-            if (CallContextHelpers.GetCurrentOperationContext() == null)
-            {
-                RestoreCallContext(context.GetRequestTelemetry());
-            }
-#else
-            if (Activity.Current == null)
-            {
-                var lostActivity = context.Items[RequestTrackingConstants.ActivityItemName] as Activity;
-                if (lostActivity != null)
-                {
-                    RestoreActivity(lostActivity);
-                }
-            }
-#endif
+            ActivityHelpers.RestoreActivityIfLost(context);
         }
-
-        /// <summary>
-        /// Implements on PostRequestHandlerExecute callback of http module
-        /// that is executed right after the handler and clean up child context 
-        /// </summary>
-  /*      public void OnPostRequestHandlerExecute(HttpContext context)
-        {
-            if (this.telemetryClient == null)
-            {
-                throw new InvalidOperationException("Initialize has not been called on this module yet.");
-            }
-
-            if (context == null)
-            {
-                WebEventSource.Log.NoHttpContextWarning();
-                return;
-            }
-
-#if !NET46
-            var telemetry = context.GetRequestTelemetry();
-            if (telemetry != null)
-            {
-                var parentContext = new OperationContextForCallContext
-                {
-                    RootOperationId = telemetry.Context.Operation.Id,
-                    ParentOperationId = telemetry.Context.Operation.ParentId,
-                    CorrelationContext = telemetry.Context.CorrelationContext
-                };
-                CallContextHelpers.RestoreOperationContext(parentContext);;
-            }
-#endif
-        }*/
 
         /// <summary>
         /// Implements on end callback of http module.
@@ -182,7 +130,7 @@
             // child telemetry items tracked within the scope of this request
             // for the request itself, we have already parsed them from the request
             // and it's time to clean it
-            CleanupCallContext();
+            ActivityHelpers.StopActivity();
 #endif
 
             RequestTelemetry requestTelemetry = context.ReadOrCreateRequestTelemetryPrivate();
@@ -207,12 +155,12 @@
 
             if (string.IsNullOrEmpty(requestTelemetry.Source) && context.Request.Headers != null)
             {
-                SetTelemetrySourceFromRequestHeaders(context, requestTelemetry);
+                this.SetTelemetrySourceFromRequestHeaders(context, requestTelemetry);
             }
 
             this.telemetryClient.TrackRequest(requestTelemetry);
 #if NET46
-            StopActivity();
+            ActivityHelpers.StopActivity();
 #endif
         }
 
@@ -305,28 +253,6 @@
             this.correlationIdLookupHelper = correlationIdLookupHelper;
         }
 
-#if !NET46
-        /// <summary>
-        /// Cleans up call context
-        /// </summary>
-        internal void CleanupCallContext()
-        {
-            CallContextHelpers.SaveOperationContext(null);
-        }
-#else
-        /// <summary>
-        /// Stops all active activities
-        /// </summary>
-        internal void StopActivity()
-        {
-
-            while (Activity.Current != null)
-            {
-                Activity.Current.Stop();
-            }
-    }
-#endif
-
         /// <summary>
         /// Checks whether or not handler is a transfer handler.
         /// </summary>
@@ -350,34 +276,6 @@
             return false;
         }
 
-#if !NET46
-        private void RestoreCallContext(RequestTelemetry requestTelemetry)
-        {
-            var operationContext = new OperationContextForCallContext
-            {
-                RootOperationId = requestTelemetry.Context.Operation.Id,
-                ParentOperationId = requestTelemetry.Id,
-                CorrelationContext = requestTelemetry.Context.CorrelationContext
-            };
-            CallContextHelpers.SaveOperationContext(operationContext);
-        }
-#endif
-
-#if NET46
-        private void RestoreActivity(Activity lostActivity)
-        {
-            Debug.Assert(lostActivity != null);
-            var restoredActivity = new Activity("HttpIn");
-            restoredActivity.SetParentId(lostActivity.Id);
-            restoredActivity.SetStartTime(lostActivity.StartTimeUtc);
-            foreach(var item in lostActivity.Baggage)
-            {
-                restoredActivity.AddBaggage(item.Key, item.Value);
-            }
-            restoredActivity.Start();
-        }
-#endif
-
         private bool TryInitializeCorrelationHelperIfNotInitialized()
         {
             try
@@ -395,7 +293,7 @@
             }
         }
 
-        internal void SetTelemetrySourceFromRequestHeaders(HttpContext context, RequestTelemetry requestTelemetry)
+        private void SetTelemetrySourceFromRequestHeaders(HttpContext context, RequestTelemetry requestTelemetry)
         {
             string sourceAppId = null;
 

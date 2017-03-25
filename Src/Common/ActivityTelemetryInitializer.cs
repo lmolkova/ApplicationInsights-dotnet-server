@@ -2,21 +2,28 @@
 {
     using System.Diagnostics;
     using Microsoft.ApplicationInsights.Channel;
+    using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.ApplicationInsights.Extensibility.Implementation;
 
     /// <summary>
-    /// Telemetry initializer that initalizes operation context with current Activity
+    /// Telemetry initializer that sets operation context to current Activity.
     /// </summary>
     public class ActivityTelemetryInitializer : ITelemetryInitializer
     {
         /// <summary>
-        /// Initializes telemetry Item with Activity.Current properties
+        /// Initializes telemetry Item with Activity.Current properties.
         /// </summary>
-        /// <param name="telemetry"></param>
+        /// <param name="telemetry">ITelemetry to initialize.</param>
         public void Initialize(ITelemetry telemetry)
         {
             if (Activity.Current == null)
+            {
+                return;
+            }
+
+            // Operation Context for the RequestTelemetry is set when it's created
+            if (telemetry is RequestTelemetry)
             {
                 return;
             }
@@ -30,34 +37,22 @@
                 var operationTelemetry = telemetry as OperationTelemetry;
                 if (operationTelemetry != null)
                 {
-                    // if it is RequestTelemetry, then Activity.Current represents it
+                    // OperationTelemetry must be represented by its own Activity
                     operationTelemetry.Id = currentActivity.Id;
-
-                    // there may be the case when:
-                    //  - this is RequestTelemetry initialization
-                    //  - and we received legacy or custom header with parentId
-                    // so Activity.ParentId is null, but we have set operation.ParentId in the RequestTrackingTelemetryModule
-                    // so we don't update it here
-                    if (string.IsNullOrEmpty(telemetry.Context.Operation.ParentId))
-                    {
-                        telemetry.Context.Operation.ParentId = currentActivity.ParentId;
-                    }
+                    operationTelemetry.Context.Operation.ParentId = currentActivity.ParentId;
 
                     foreach (var tag in currentActivity.Tags)
                     {
-                        if (!telemetry.Context.CorrelationContext.ContainsKey(tag.Key))
+                        if (!operationTelemetry.Context.Properties.ContainsKey(tag.Key))
                         {
-                            telemetry.Context.Properties.Add(tag);
+                            operationTelemetry.Context.Properties.Add(tag);
                         }
                     }
                 }
                 else
                 {
                     // all other telemetries created within the scope of this request, are it's children and don't share tags
-                    if (string.IsNullOrEmpty(telemetry.Context.Operation.ParentId))
-                    {
-                        telemetry.Context.Operation.ParentId = currentActivity.Id;
-                    }
+                    telemetry.Context.Operation.ParentId = currentActivity.Id;
                 }
 
                 foreach (var baggage in currentActivity.Baggage)

@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.ApplicationInsights.Common;
-using Microsoft.ApplicationInsights.DataContracts;
-using Microsoft.ApplicationInsights.Web.Helpers;
-using Microsoft.ApplicationInsights.Web.Implementation;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace Microsoft.ApplicationInsights
+﻿namespace Microsoft.ApplicationInsights
 {
+    using System.Diagnostics;
+    using Microsoft.ApplicationInsights.Common;
+    using Microsoft.ApplicationInsights.DataContracts;
+    using Microsoft.ApplicationInsights.Web.Helpers;
+    using Microsoft.ApplicationInsights.Web.Implementation;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     [TestClass]
-    class ActivityTelemetryInitializerTests
+    public class ActivityTelemetryInitializerTests
     {
-        TestDiagnosticSource diagnosticSource;
+        private TestDiagnosticSource diagnosticSource;
 
         [TestInitialize]
         public void Initialize()
@@ -27,14 +22,10 @@ namespace Microsoft.ApplicationInsights
         [TestCleanup]
         public void Cleanup()
         {
-            var rootActivity = Activity.Current;
-            Debug.Assert(rootActivity != null);
-
-            while (rootActivity.Parent != null)
+            while (Activity.Current != null)
             {
-                rootActivity = rootActivity.Parent;
+                Activity.Current.Stop();
             }
-            this.diagnosticSource.StopActivity(rootActivity);
         }
 
         [TestMethod]
@@ -58,14 +49,14 @@ namespace Microsoft.ApplicationInsights
             Assert.AreEqual(requestTelemetry.Id, exceptionTelemetry.Context.Operation.ParentId);
         }
 
-        private const string ActivityName = "Microsoft.AspNet.HttpReqIn";
         private class TestDiagnosticSource
         {
+            private const string ActivityName = "Microsoft.AspNet.HttpReqIn";
             private readonly DiagnosticSource testSource = new DiagnosticListener("Microsoft.AspNet.Correlation");
 
             public void StartActivity(Activity activity = null)
             {
-                testSource.StartActivity(activity ?? new Activity(ActivityName), new { });
+                this.testSource.StartActivity(activity ?? new Activity(ActivityName), new { });
             }
 
             public void StopActivity(Activity activity = null)
@@ -74,9 +65,10 @@ namespace Microsoft.ApplicationInsights
                 {
                     activity = Activity.Current;
                 }
-                Debug.Assert(activity != null);
 
-                testSource.StopActivity(activity, new { });
+                Debug.Assert(activity != null, "activity nust not be null");
+
+                this.testSource.StopActivity(activity, new { });
             }
         }
     }

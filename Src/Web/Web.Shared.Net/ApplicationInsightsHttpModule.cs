@@ -70,7 +70,6 @@
                     context.BeginRequest += this.OnBeginRequest;
                     context.EndRequest += this.OnEndRequest;
                     context.PreRequestHandlerExecute += this.OnPreRequestHandlerExecute;
-                    //context.PostRequestHandlerExecute += this.OnPostRequestHandlerExecute;
                 }
                 catch (Exception exc)
                 {
@@ -101,6 +100,7 @@
                     {
                         this.AddCorreleationHeaderOnSendRequestHeaders(httpApplication);
                     }
+
                     this.requestModule.OnBeginRequest(httpApplication.Context);
                 }
 
@@ -165,18 +165,6 @@
             }
         }
 
-        /*private void OnPostRequestHandlerExecute(object sender, EventArgs eventArgs)
-        {
-            if (this.isEnabled)
-            {
-                HttpApplication httpApplication = (HttpApplication)sender;
-
-                this.TraceCallback("OnPreRequestHandlerExecute", httpApplication);
-
-                this.requestModule?.OnPostRequestHandlerExecute(httpApplication.Context);
-            }
-        }*/
-
         private void OnEndRequest(object sender, EventArgs eventArgs)
         {
             if (this.isEnabled)
@@ -189,6 +177,7 @@
                     {
                         this.exceptionModule.OnError(httpApplication.Context);
                     }
+
                     if (this.requestModule != null)
                     {
                         this.requestModule.OnEndRequest(httpApplication.Context);

@@ -3,13 +3,13 @@
     using System;
     using System.Diagnostics;
     using Microsoft.ApplicationInsights.Common;
-    using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.ApplicationInsights.DependencyCollector.Implementation;
+    using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.ApplicationInsights.TestFramework;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// Tests .NET 4.6 specific dependency injection behavior
+    /// Tests .NET 4.6 specific dependency injection behavior.
     /// </summary>
     [TestClass]
     public class ClientServerDependencyTrackerTests

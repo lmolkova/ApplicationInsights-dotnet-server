@@ -1,4 +1,5 @@
-﻿namespace Microsoft.ApplicationInsights.Common
+﻿#if !NET46
+namespace Microsoft.ApplicationInsights.Common
 {
     using System;
     using System.Diagnostics;
@@ -72,11 +73,6 @@
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
-        public static bool IsHierarchicalRequestId(string requestId)
-        {
-            return requestId != null && requestId.Length > 0 && requestId[0] == '|';
-        }
-
         private static string AppendSuffix(string parentId, string suffix, char delimiter)
         {
             if (parentId.Length + suffix.Length < RequestIdMaxLength)
@@ -133,3 +129,4 @@
         }
     }
 }
+#endif

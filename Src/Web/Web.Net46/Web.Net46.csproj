@@ -45,7 +45,6 @@
   <ItemGroup>
     <Compile Include="..\Web.Net45\Implementation\HttpRequestExtensions.cs" />
     <Compile Include="..\Web.Net45\Implementation\SdkVersionUtils.cs" />
-    <Compile Include="AspNetDiagnosticListener.cs" />
     <Compile Include="..\..\Common\ActivityTelemetryInitializer.cs">
       <Link>ActivityTelemetryInitializer.cs</Link>
     </Compile>
