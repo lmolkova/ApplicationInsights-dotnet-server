@@ -90,6 +90,15 @@ namespace Microsoft.ApplicationInsights.Common
         }
 #pragma warning restore 618
 #endif
+        /// <summary>
+        /// Checks if given RequestId is hierarchical.
+        /// </summary>
+        /// <param name="requestId">Request-Id.</param>
+        /// <returns>true if requestId is hierarchical, false otherwise</returns>
+        internal static bool IsHierarchicalRequestId(string requestId)
+        {
+            return !string.IsNullOrEmpty(requestId) && requestId[0] == '|';
+        }
 
         private static bool TryParseStandardHeaders(HttpRequest request, out string rootId, out string parentId, out IDictionary<string, string> correlationContext)
         {
@@ -123,12 +132,7 @@ namespace Microsoft.ApplicationInsights.Common
             return false;
         }
 
-        private static bool IsHierarchicalRequestId(string requestId)
-        {
-            return !string.IsNullOrEmpty(requestId) && requestId[0] == '|';
-        }
-
-        private static bool TryParseCustomHeaders(HttpRequest request, out string rootId, out string parentId)
+        internal static bool TryParseCustomHeaders(HttpRequest request, out string rootId, out string parentId)
         {
             parentId = request.UnvalidatedGetHeader(ParentOperationIdHeaderName);
             rootId = request.UnvalidatedGetHeader(RootOperationIdHeaderName);

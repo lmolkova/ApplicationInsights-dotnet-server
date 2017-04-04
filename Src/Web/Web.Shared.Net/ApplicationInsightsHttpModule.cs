@@ -103,7 +103,9 @@
                         this.AddCorreleationHeaderOnSendRequestHeaders(httpApplication);
                     }
 
+#if NET40
                     this.requestModule.OnBeginRequest(httpApplication.Context);
+#endif
                 }
 
                 // Kept for backcompat. Should be removed in 2.3 SDK
@@ -178,6 +180,7 @@
 
                 if (this.IsFirstRequest(httpApplication))
                 {
+#if NET40
                     if (this.exceptionModule != null)
                     {
                         this.exceptionModule.OnError(httpApplication.Context);
@@ -187,7 +190,7 @@
                     {
                         this.requestModule.OnEndRequest(httpApplication.Context);
                     }
-
+#endif
                     // Kept for backcompat. Should be removed in 2.3 SDK
                     WebEventsPublisher.Log.OnError();
                     WebEventsPublisher.Log.OnEnd();

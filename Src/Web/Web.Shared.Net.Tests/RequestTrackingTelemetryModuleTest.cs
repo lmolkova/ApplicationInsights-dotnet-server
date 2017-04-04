@@ -2,14 +2,12 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.Threading.Tasks;
     using System.Web;
 
     using Microsoft.ApplicationInsights.Channel;
     using Microsoft.ApplicationInsights.Common;
-    using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.ApplicationInsights.Extensibility.Implementation;
     using Microsoft.ApplicationInsights.TestFramework;
@@ -20,6 +18,9 @@
 
     using Assert = Xunit.Assert;
 
+    /// <summary>
+    /// Platform independent tests for RequestTrackingTelemetryModule.
+    /// </summary>
     [TestClass]
     public partial class RequestTrackingTelemetryModuleTest
     {

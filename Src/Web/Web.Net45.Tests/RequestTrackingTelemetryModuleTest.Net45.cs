@@ -10,6 +10,9 @@
 
     using Assert = Xunit.Assert;
 
+    /// <summary>
+    /// NET 4.5 specific tests for RequestTrackingTelemetryModule.
+    /// </summary>
     public partial class RequestTrackingTelemetryModuleTest
     {
         private DiagnosticListener diagnosticListener = new DiagnosticListener("Microsoft.AspNet.Correlation");
@@ -29,10 +32,9 @@
             var context = HttpModuleHelper.GetFakeHttpContext();
             var module = this.RequestTrackingTelemetryModuleFactory(this.CreateDefaultConfig(context));
 
-            // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
-            // let's simulate it
+            // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it; let's simulate it
             var activity = new Activity("Microsoft.AspNet.HttpReqIn").SetParentId("|guid1.1").AddBaggage("k", "v");
-            diagnosticListener.StartActivity(activity, new {});
+            this.diagnosticListener.StartActivity(activity, new { });
 
             module.OnBeginRequest(context);
             var requestTelemetry = context.GetRequestTelemetry();
@@ -58,7 +60,7 @@
             // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
             // let's simulate it
             var activity = new Activity("Microsoft.AspNet.HttpReqIn").SetParentId("guid1").AddBaggage("k", "v");
-            diagnosticListener.StartActivity(activity, new { });
+            this.diagnosticListener.StartActivity(activity, new { });
 
             module.OnBeginRequest(context);
             var requestTelemetry = context.GetRequestTelemetry();
@@ -85,7 +87,7 @@
             // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
             // let's simulate it
             var activity = new Activity("Microsoft.AspNet.HttpReqIn").AddBaggage("k", "v");
-            diagnosticListener.StartActivity(activity, new { });
+            this.diagnosticListener.StartActivity(activity, new { });
 
             module.OnBeginRequest(context);
             var requestTelemetry = context.GetRequestTelemetry();
@@ -112,8 +114,8 @@
             // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
             // let's simulate it. It will read Request-Id header and we will not update parent, since it's already set
             var activity = new Activity("Microsoft.AspNet.HttpReqIn").SetParentId("standard-id").AddBaggage("k", "v");
-            diagnosticListener.IsEnabled("Microsoft.AspNet.HttpReqIn", activity);
-            diagnosticListener.StartActivity(activity, new { });
+            this.diagnosticListener.IsEnabled("Microsoft.AspNet.HttpReqIn", activity);
+            this.diagnosticListener.StartActivity(activity, new { });
 
             module.OnBeginRequest(context);
 
@@ -141,8 +143,8 @@
             // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
             // let's simulate it. It will no find Request-Id header and we will update parent
             var activity = new Activity("Microsoft.AspNet.HttpReqIn");
-            diagnosticListener.IsEnabled("Microsoft.AspNet.HttpReqIn", activity);
-            diagnosticListener.StartActivity(activity, new { });
+            this.diagnosticListener.IsEnabled("Microsoft.AspNet.HttpReqIn", activity);
+            this.diagnosticListener.StartActivity(activity, new { });
 
             module.OnBeginRequest(context);
             var requestTelemetry = context.GetRequestTelemetry();
@@ -153,7 +155,6 @@
 
             Assert.True(requestTelemetry.Id.StartsWith("|guid2."));
         }
-
 
         [TestMethod]
         public void OnBeginReadsRootAndParentIdFromCustomHeader()
@@ -170,8 +171,8 @@
             // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
             // let's simulate it. It will no find Request-Id header and we will update parent
             var activity = new Activity("Microsoft.AspNet.HttpReqIn");
-            diagnosticListener.IsEnabled("Microsoft.AspNet.HttpReqIn", activity);
-            diagnosticListener.StartActivity(activity, new { });
+            this.diagnosticListener.IsEnabled("Microsoft.AspNet.HttpReqIn", activity);
+            this.diagnosticListener.StartActivity(activity, new { });
                         
             module.OnBeginRequest(context);
 
@@ -194,7 +195,7 @@
             // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
             // let's simulate it
             var activity = new Activity("Microsoft.AspNet.HttpReqIn").SetParentId("|guid1.1").AddBaggage("k", "v");
-            diagnosticListener.StartActivity(activity, new { });
+            this.diagnosticListener.StartActivity(activity, new { });
 
             module.OnBeginRequest(context);
 
@@ -221,7 +222,7 @@
             // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
             // let's simulate it
             var activity = new Activity("Microsoft.AspNet.HttpReqIn").SetParentId("|guid1.1").AddBaggage("k", "v");
-            diagnosticListener.StartActivity(activity, new { });
+            this.diagnosticListener.StartActivity(activity, new { });
 
             module.OnBeginRequest(context);
 
@@ -238,6 +239,7 @@
             var requestTelemetry = context.GetRequestTelemetry();
 
             Assert.Equal(requestTelemetry.Context.Operation.Id, trace.Context.Operation.Id);
+
             // we created Activity for request and assigned Id for the request like guid1.1.12345_
             // then we lost it and restored (started a new child activity), so the Id is guid1.1.12345_abc_
             // so the request is grand parent to the trace
@@ -258,7 +260,7 @@
             // ASP.NET HttpModule is responsible to parse Activity from incoming request and start it
             // let's simulate it
             var activity = new Activity("Microsoft.AspNet.HttpReqIn").SetParentId("|guid1.1").AddBaggage("k", "v");
-            diagnosticListener.StartActivity(activity, new { });
+            this.diagnosticListener.StartActivity(activity, new { });
 
             module.OnBeginRequest(context);
 
@@ -271,6 +273,7 @@
             var requestTelemetry = context.GetRequestTelemetry();
 
             Assert.Equal(requestTelemetry.Context.Operation.Id, trace.Context.Operation.Id);
+
             // we created Activity for request and assigned Id for the request like guid1.1.12345
             // then we created Activity for request children and assigned it Id like guid1.1.12345_1
             // then we lost it and restored (started a new child activity), so the Id is guid1.1.123_1.abc

@@ -67,7 +67,7 @@
 
             var workerRequest = new SimpleWorkerRequestWithHeaders(UrlPath, UrlQueryString, new StringWriter(CultureInfo.InvariantCulture), headers);
             
-            var context= new HttpContext(workerRequest);
+            var context = new HttpContext(workerRequest);
             HttpContext.Current = context;
             return context;
         }

@@ -16,9 +16,6 @@
     /// </summary>
     public class RequestTrackingTelemetryModule : ITelemetryModule
     {
-#if !NET40
-        private AspNetDiagnosticListener aspNetDiagnosticListener;
-#endif
         private readonly IList<string> handlersToFilter = new List<string>();
         private TelemetryClient telemetryClient;
         private bool correlationHeadersEnabled = true;
@@ -240,9 +237,6 @@
         /// <param name="configuration">Telemetry configuration to use for initialization.</param>
         public void Initialize(TelemetryConfiguration configuration)
         {
-#if !NET40
-            this.aspNetDiagnosticListener = new AspNetDiagnosticListener();
-#endif
             this.telemetryClient = new TelemetryClient(configuration);
             this.telemetryClient.Context.GetInternalContext().SdkVersion = SdkVersionUtils.GetSdkVersion("web:");
 

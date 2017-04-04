@@ -11,6 +11,9 @@
 
     using Assert = Xunit.Assert;
 
+    /// <summary>
+    /// NET 4.0 specific tests for RequestTrackingTelemetryModule.
+    /// </summary>
     public partial class RequestTrackingTelemetryModuleTest
     {
         [TestCleanup]
