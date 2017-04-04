@@ -3,8 +3,8 @@
     using System;
     using System.Linq;
     using System.Web;
-    using Microsoft.ApplicationInsights.Common;
     using Microsoft.ApplicationInsights.DataContracts;
+    using Microsoft.ApplicationInsights.Common;
 
     internal static class RequestTrackingExtensions
     {
@@ -16,8 +16,11 @@
                 throw new ArgumentException("platformContext");
             }
 
+#if NET40
             var result = ActivityHelpers.ParseRequest(platformContext);
-
+#else
+            var result = new RequestTelemetry();
+#endif
             platformContext.Items.Add(RequestTrackingConstants.RequestTelemetryItemName, result);
             WebEventSource.Log.WebTelemetryModuleRequestTelemetryCreated();
 

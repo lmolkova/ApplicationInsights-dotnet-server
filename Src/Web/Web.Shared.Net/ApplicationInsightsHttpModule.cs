@@ -69,7 +69,9 @@
                 {
                     context.BeginRequest += this.OnBeginRequest;
                     context.EndRequest += this.OnEndRequest;
+#if NET40
                     context.PreRequestHandlerExecute += this.OnPreRequestHandlerExecute;
+#endif
                 }
                 catch (Exception exc)
                 {
@@ -153,6 +155,7 @@
             }
         }
 
+#if NET40
         private void OnPreRequestHandlerExecute(object sender, EventArgs eventArgs)
         {
             if (this.isEnabled)
@@ -164,6 +167,7 @@
                 this.requestModule?.OnPreRequestHandlerExecute(httpApplication.Context);
             }
         }
+#endif
 
         private void OnEndRequest(object sender, EventArgs eventArgs)
         {

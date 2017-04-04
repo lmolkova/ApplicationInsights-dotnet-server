@@ -10,12 +10,6 @@
     [TestClass]
     public class OperationNameTelemetryInitializerTests
     {
-        [TestCleanup]
-        public void Cleanup()
-        {
-           Common.ActivityHelpers.StopRequestActivity();
-        }
-
         [TestMethod]
         public void InitializeDoesNotThrowWhenHttpContextIsNull()
         {

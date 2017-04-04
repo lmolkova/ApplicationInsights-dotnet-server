@@ -16,6 +16,9 @@
     /// </summary>
     public class RequestTrackingTelemetryModule : ITelemetryModule
     {
+#if !NET40
+        private AspNetDiagnosticListener aspNetDiagnosticListener;
+#endif
         private readonly IList<string> handlersToFilter = new List<string>();
         private TelemetryClient telemetryClient;
         private bool correlationHeadersEnabled = true;
@@ -89,6 +92,7 @@
             }
         }
 
+#if NET40
         /// <summary>
         /// Implements on PreRequestHandlerExecute callback of http module
         /// that is executed right before the handler and restores any execution context 
@@ -108,8 +112,9 @@
                 return;
             }
 
-            ActivityHelpers.RestoreActivityIfLost(context);
+            ActivityHelpers.RestoreOperationContextIfLost(context);
         }
+#endif
 
         /// <summary>
         /// Implements on end callback of http module.
@@ -126,9 +131,11 @@
                 return;
             }
 
+#if NET40
             // we store Activity/Call context to initialize child telemtery within the scope of this request,
             // so it's time to stop it
-            ActivityHelpers.StopRequestActivity();
+            ActivityHelpers.CleanOperationContext();
+#endif
             var requestTelemetry = context.ReadOrCreateRequestTelemetryPrivate();
             requestTelemetry.Stop();
 
@@ -233,6 +240,9 @@
         /// <param name="configuration">Telemetry configuration to use for initialization.</param>
         public void Initialize(TelemetryConfiguration configuration)
         {
+#if !NET40
+            this.aspNetDiagnosticListener = new AspNetDiagnosticListener();
+#endif
             this.telemetryClient = new TelemetryClient(configuration);
             this.telemetryClient.Context.GetInternalContext().SdkVersion = SdkVersionUtils.GetSdkVersion("web:");
 

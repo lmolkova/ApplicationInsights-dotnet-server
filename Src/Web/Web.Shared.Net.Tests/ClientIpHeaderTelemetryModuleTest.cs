@@ -18,12 +18,6 @@
             Trace.WriteLine(Assembly.GetExecutingAssembly().FullName);
         }
 
-        [TestCleanup]
-        public void Cleanup()
-        {
-            Common.ActivityHelpers.StopRequestActivity();
-        }
-
         [TestMethod]
         public void ConstructorSetsDefaultClientIpHeader()
         {

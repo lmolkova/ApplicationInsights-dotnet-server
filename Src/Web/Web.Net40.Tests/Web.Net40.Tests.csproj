@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), 'Test.props'))\Test.props" />
   <PropertyGroup>
@@ -90,6 +90,9 @@
     <ProjectReference Include="..\..\Web\Web.Net40\Web.Net40.csproj">
       <Name>Web.Net40</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="RequestTrackingTelemetryModuleTest.Net40.cs" />
   </ItemGroup>
   <Import Project="..\Web.Shared.Net.Tests\Web.Shared.Net.Tests.projitems" Label="Shared" />
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />

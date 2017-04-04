@@ -12,12 +12,6 @@
     [TestClass]
     public class AccountIdTelemetryInitializerTests
     {
-        [TestCleanup]
-        public void Cleanup()
-        {
-            Common.ActivityHelpers.StopRequestActivity();
-        }
-
         [TestMethod]
         public void InitializeDoesNotThrowWhenHttpContextIsNull()
         {
