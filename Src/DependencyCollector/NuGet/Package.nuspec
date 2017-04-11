@@ -24,11 +24,12 @@
         <dependency id="Microsoft.ApplicationInsights" version="[$coresdkversion$]" />
         <dependency id="Microsoft.ApplicationInsights.Agent.Intercept" version="2.0.7" />
       </group>
-      <group targetFramework="netcoreapp1.0">
+      <group targetFramework="netstandard1.6">
         <dependency id="Microsoft.ApplicationInsights" version="[$coresdkversion$]" />
-        <dependency id="Microsoft.Extensions.DiagnosticAdapter" version="1.0.0" />
+        <dependency id="Microsoft.Extensions.DiagnosticAdapter" version="1.1.0" />
         <dependency id="NETStandard.Library" version="1.6.1" />
-        <dependency id="System.Diagnostics.DiagnosticSource" version="4.3.0-preview1-24530-04" />
+        <dependency id="System.Diagnostics.DiagnosticSource" version="4.4.0-beta-25130-03" />
+        <dependency id="System.Diagnostics.StackTrace" version="4.3.0" />
       </group>
     </dependencies>
   </metadata>
@@ -46,13 +47,14 @@
     <file src="$configuration$\Src\DependencyCollector\Net45\Microsoft.AI.DependencyCollector.dll" target="lib\net45" />
     <file src="$configuration$\Src\DependencyCollector\Net45\Microsoft.AI.DependencyCollector.pdb" target="lib\net45" />
     <file src="$configuration$\Src\DependencyCollector\Net45\Microsoft.AI.DependencyCollector.xml" target="lib\net45" />
+    
     <file src="$configuration$\Src\DependencyCollector\NuGet\ApplicationInsights.config.transform" target="content\net45" />
     <file src="$configuration$\Src\DependencyCollector\NuGet\ApplicationInsights.config.install.xdt" target="content\net45" />
     <file src="$configuration$\Src\DependencyCollector\NuGet\ApplicationInsights.config.uninstall.xdt" target="content\net45" />
 
-    <!-- For .NET Core App 1.0 projects -->
-    //TODO<file src="$configuration$\Src\DependencyCollector\Microsoft.AI.DependencyCollector\Microsoft.AI.DependencyCollector.dll" target="lib\netcoreapp1.0" />
-    <file src="$configuration$\Src\DependencyCollector\Microsoft.AI.DependencyCollector\Microsoft.AI.DependencyCollector.pdb" target="lib\netcoreapp1.0" />
-    <file src="$configuration$\Src\DependencyCollector\Microsoft.AI.DependencyCollector\Microsoft.AI.DependencyCollector.xml" target="lib\netcoreapp1.0" />
+    <!-- For .NETSTANDARD 1.6 projects -->
+    <file src="$configuration$\Src\DependencyCollector\NetCore\netstandard1.6\Microsoft.AI.DependencyCollector.dll" target="lib\netstandard1.6" />
+    <file src="$configuration$\Src\DependencyCollector\NetCore\netstandard1.6\Microsoft.AI.DependencyCollector.pdb" target="lib\netstandard1.6" />
+    <file src="$configuration$\Src\DependencyCollector\NetCore\netstandard1.6\Microsoft.AI.DependencyCollector.xml" target="lib\netstandard1.6" />
   </files>
 </package>

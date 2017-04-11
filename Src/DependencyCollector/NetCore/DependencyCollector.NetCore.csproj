@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+ï»¿<Project Sdk="Microsoft.NET.Sdk">
 
 
   <PropertyGroup>
-    <Copyright>Copyright © Microsoft. All Rights Reserved.</Copyright>
+    <Copyright>Copyright ï¿½ Microsoft. All Rights Reserved.</Copyright>
     <VersionPrefix>2.4.0-beta1</VersionPrefix>
     <Authors>Microsoft</Authors>
     <TargetFramework>netstandard1.6</TargetFramework>
@@ -29,6 +29,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.4.0-beta1-build08904" />
     <PackageReference Include="Microsoft.Extensions.DiagnosticAdapter" Version="1.1.0" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="4.4.0-beta-25130-03" />
+    <PackageReference Include="System.Diagnostics.StackTrace" Version="4.3.0" />
   </ItemGroup>
 
 

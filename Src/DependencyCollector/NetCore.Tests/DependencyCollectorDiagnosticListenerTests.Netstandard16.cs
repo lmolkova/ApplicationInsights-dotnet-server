@@ -67,6 +67,17 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
         }
 
         /// <summary>
+        /// Cleans up.
+        /// </summary>
+        [TestCleanup]
+        public void Cleanup()
+        {
+            while (Activity.Current != null)
+            {
+                Activity.Current.Stop();
+            }
+        }
+        /// <summary>
         /// Call OnRequest() with no uri in the HttpRequestMessage.
         /// </summary>
         [TestMethod]
@@ -304,7 +315,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
         }
 
         /// <summary>
-        /// Call OnResponse() with a successful request but no target instrumentation key in the response headers.
+        /// Tests that ougoing request has proper context when done in scope of incoming request (incoming request activity).
         /// </summary>
         [TestMethod]
         public void OnResponseWithParentActivity()

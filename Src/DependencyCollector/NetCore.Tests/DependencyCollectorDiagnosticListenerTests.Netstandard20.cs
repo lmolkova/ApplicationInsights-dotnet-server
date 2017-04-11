@@ -8,7 +8,6 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
     using System.Threading.Tasks;
 
     using Implementation;
-    using Microsoft.ApplicationInsights.Channel;
     using Microsoft.ApplicationInsights.Common;
     using Microsoft.ApplicationInsights.DataContracts;
     using Microsoft.ApplicationInsights.Extensibility;
@@ -19,6 +18,9 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
     /// </summary>
     public partial class DependencyCollectorDiagnosticListenerTests
     {
+        /// <summary>
+        /// Tests that OnStartActivity injects headers.
+        /// </summary>
         [TestMethod]
         public void OnActivityStartInjectsHeaders()
         {
@@ -30,12 +32,15 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             this.listener.OnActivityStart(request);
 
             // Request-Id and Correlation-Context are injected by HttpClient
-            // hcek only legacy headers here
+            // check only legacy headers here
             Assert.AreEqual(activity.RootId, request.Headers.GetValues(RequestResponseHeaders.StandardRootIdHeader).Single());
             Assert.AreEqual(activity.Id, request.Headers.GetValues(RequestResponseHeaders.StandardParentIdHeader).Single());
             Assert.AreEqual(mockAppId, GetRequestContextKeyValue(request, RequestResponseHeaders.RequestContextSourceKey));
         }
 
+        /// <summary>
+        /// Tests that OnStopActivity tracks telemetry
+        /// </summary>
         [TestMethod]
         public void OnActivityStopTracksTelemetry()
         {
@@ -69,6 +74,9 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual("v", telemetry.Context.Properties["k"]);
         }
 
+        /// <summary>
+        /// Tests that OnStopActivity tracks cancelled request.
+        /// </summary>
         [TestMethod]
         public void OnActivityStopTracksTelemetryForCanceledRequest()
         {
@@ -86,6 +94,9 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(false, telemetry.Success);
         }
 
+        /// <summary>
+        /// Tests that OnStopActivity tracks faulted request.
+        /// </summary>
         [TestMethod]
         public void OnActivityStopTracksTelemetryForFaultedRequest()
         {
@@ -103,6 +114,9 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(false, telemetry.Success);
         }
 
+        /// <summary>
+        /// Tests that exception during request processing os tracked with correct context.
+        /// </summary>
         [TestMethod]
         public void OnExceptionTracksException()
         {

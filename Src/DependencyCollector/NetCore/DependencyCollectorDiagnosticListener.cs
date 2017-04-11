@@ -152,6 +152,8 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
 
                 DependencyTelemetry telemetry = new DependencyTelemetry();
                 Activity currentActivity = Activity.Current;
+
+                // properly fill dependency telemetry operation context: OperationCorrelationTelemetryInitializer initializes child telemetry
                 telemetry.Context.Operation.Id = currentActivity.RootId;
                 telemetry.Context.Operation.ParentId = currentActivity.ParentId;
                 telemetry.Id = currentActivity.Id;
