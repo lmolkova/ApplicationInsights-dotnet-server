@@ -8,6 +8,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -17,7 +18,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
     /// Unit tests for DependencyCollectorDiagnosticListener.
     /// </summary>
     [TestClass]
-    public class DependencyCollectorDiagnosticListenerTests
+    public partial class DependencyCollectorDiagnosticListenerTests
     {
         private const string requestUrl = "www.example.com";
         private const string requestUrlWithScheme = "https://" + requestUrl;
@@ -76,6 +77,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(0, sentTelemetry.Count);
         }
 
+        //TODODODODODODODODO
         /// <summary>
         /// Call OnRequest() with valid arguments.
         /// </summary>
@@ -87,7 +89,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             listener.OnRequest(request, loggingRequestId);
 
             Assert.AreEqual(1, listener.PendingDependencyTelemetry.Count());
-            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single();
+            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single().Telemetry;
             Assert.AreEqual("POST /", telemetry.Name);
             Assert.AreEqual(requestUrl, telemetry.Target);
             Assert.AreEqual(RemoteDependencyConstants.HTTP, telemetry.Type);
@@ -135,7 +137,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(1, listener.PendingDependencyTelemetry.Count());
             Assert.AreEqual(0, sentTelemetry.Count);
 
-            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single();
+            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single().Telemetry;
             Assert.AreEqual("", telemetry.ResultCode);
             Assert.AreEqual(true, telemetry.Success);
 
@@ -163,7 +165,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(1, listener.PendingDependencyTelemetry.Count());
             Assert.AreEqual(0, sentTelemetry.Count);
 
-            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single();
+            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single().Telemetry;
             Assert.AreEqual("", telemetry.ResultCode);
             Assert.AreEqual(true, telemetry.Success);
 
@@ -191,7 +193,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(1, listener.PendingDependencyTelemetry.Count());
             Assert.AreEqual(0, sentTelemetry.Count);
 
-            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single();
+            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single().Telemetry;
             Assert.AreEqual("", telemetry.ResultCode);
             Assert.AreEqual(true, telemetry.Success);
 
@@ -221,7 +223,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(1, listener.PendingDependencyTelemetry.Count());
             Assert.AreEqual(0, sentTelemetry.Count);
 
-            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single();
+            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single().Telemetry;
             Assert.AreEqual("", telemetry.ResultCode);
             Assert.AreEqual(true, telemetry.Success);
 
@@ -251,7 +253,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(1, listener.PendingDependencyTelemetry.Count());
             Assert.AreEqual(0, sentTelemetry.Count);
 
-            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single();
+            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single().Telemetry;
             Assert.AreEqual("", telemetry.ResultCode);
             Assert.AreEqual(true, telemetry.Success);
 
@@ -282,7 +284,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(1, listener.PendingDependencyTelemetry.Count());
             Assert.AreEqual(0, sentTelemetry.Count);
 
-            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single();
+            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single().Telemetry;
             Assert.AreEqual("", telemetry.ResultCode);
             Assert.AreEqual(true, telemetry.Success);
 
@@ -299,6 +301,42 @@ namespace Microsoft.ApplicationInsights.DependencyCollector
             Assert.AreEqual(GetApplicationInsightsTarget(targetApplicationId), telemetry.Target);
             Assert.AreEqual(notFoundResultCode, telemetry.ResultCode);
             Assert.AreEqual(false, telemetry.Success);
+        }
+
+        /// <summary>
+        /// Call OnResponse() with a successful request but no target instrumentation key in the response headers.
+        /// </summary>
+        [TestMethod]
+        public void OnResponseWithParentActivity()
+        {
+            var parentActivity = new Activity("incoming_request");
+            parentActivity.AddBaggage("k1", "v1");
+            parentActivity.AddBaggage("k2", "v2");
+            parentActivity.Start();
+
+            Guid loggingRequestId = Guid.NewGuid();
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, requestUrlWithScheme);
+            listener.OnRequest(request, loggingRequestId);
+            Assert.IsNotNull(Activity.Current);
+
+            var parentId = request.Headers.GetValues(RequestResponseHeaders.RequestIdHeader).Single();
+            Assert.AreEqual(Activity.Current.Id, parentId);
+
+            var correlationContextHeader = request.Headers.GetValues(RequestResponseHeaders.CorrelationContextHeader).ToArray();
+            Assert.AreEqual(2, correlationContextHeader.Length);
+            Assert.IsTrue(correlationContextHeader.Contains("k1=v1"));
+            Assert.IsTrue(correlationContextHeader.Contains("k2=v2"));
+
+            DependencyTelemetry telemetry = listener.PendingDependencyTelemetry.Single().Telemetry;
+
+            HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+            listener.OnResponse(response, loggingRequestId);
+            Assert.AreEqual(parentActivity, Activity.Current);
+            Assert.AreEqual(parentId, telemetry.Id);
+            Assert.AreEqual(parentActivity.RootId, telemetry.Context.Operation.Id);
+            Assert.AreEqual(parentActivity.Id, telemetry.Context.Operation.ParentId);
+
+            parentActivity.Stop();
         }
     }
 }
