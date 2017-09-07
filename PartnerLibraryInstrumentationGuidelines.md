@@ -28,9 +28,11 @@ private async Task<OperationOutput> ProcessOperationImplAsync(OperationInput inp
 
 public Task<OperationOutput> ProcessOperationAsync(OperationInput input)
 {
+    // Explain: isEnabled() is quick wait to check that sombody listens, isEnabled(ActivityName, input) checks that somebody listens to this kind of activity AND this kind of input
+    // thus we keeping non-instrumented zero costs and enable sampling
     if (DiagnosticListener.IsEnabled() && 
-        DiagnosticListener.IsEnabled(ActivityName) &&
-        DiagnosticListener.IsEnabled(ActivityName, input))
+    
+        DiagnosticListener.IsEnabled(ActivityName, input)) - this breaks scenario when I want to receive Exception events only. It should only prevent activity from being created
     {
         // instrument operation only if there is an active listener
         return this.ProcessOperationInstrumentedAsync(input);
@@ -39,14 +41,21 @@ public Task<OperationOutput> ProcessOperationAsync(OperationInput input)
     return this.ProcessOperationImplAsync(input);
 }
 
+// Explain: async is important!
 private async Task<OperationOutput> ProcessOperationInstrumentedAsync(OperationInput input)
 {
     Activity activity = new Activity(ActivityName);
 
+    // Explain: are those required?
     activity.AddTag("component", "Microsoft.ApplicationInsights.Samples");
     activity.AddTag("span.kind", "client");
     // TODO extract activity tags from input
 
+    // Explain: which tags are important and why
+    // Explain: what if i want to add a tag that is not in opentracing list, but is useful for users, what should i do?
+
+    
+    // Explain: we reduce verbosity, because start event is not really ineteresting for the majority of listeners
     if (DiagnosticListener.IsEnabled(ActivityStartName))
     {
         DiagnosticListener.StartActivity(activity, new {Input = input});
@@ -61,37 +70,30 @@ private async Task<OperationOutput> ProcessOperationInstrumentedAsync(OperationI
 
     try
     {
-        outputTask = this.ProcessOperationImplAsync(input);;
+        outputTask = this.ProcessOperationImplAsync(input);
         output = await outputTask;
 
-        activity.AddTag("error", "false");
         // TODO extract activity tags from output
     }
     catch (Exception ex)
     {
-        activity.AddTag("error", "true");
-
         if (DiagnosticListener.IsEnabled(ActivityExceptionName))
         {
+            //Explain: there is scnenario when I only want execeptions, but not  any activity events
+            // And Input is included into the payload for exactly this case
             DiagnosticListener.Write(ActivityExceptionName, new {Input = input, Exception = ex});
         }
     }
     finally
     {
-        if (DiagnosticListener.IsEnabled(ActivityStopName))
-        {
-            DiagnosticListener.StopActivity(activity,
-                new
-                {
-                    Output = outputTask?.Status == TaskStatus.RanToCompletion ? output : null,
-                    Input = input,
-                    TaskStatus = outputTask?.Status
-                });
-        }
-        else
-        {
-            activity.Stop();
-        }
+        activity.AddTag("error", (outputTask?.Status == TaskStatus.RanToCompletion).ToString());
+        DiagnosticListener.StopActivity(activity,
+            new
+            {
+                Output = outputTask?.Status == TaskStatus.RanToCompletion ? output : null,
+                Input = input,
+                TaskStatus = outputTask?.Status
+            });
     }
 
     return output;
@@ -103,6 +105,8 @@ private async Task<OperationOutput> ProcessOperationInstrumentedAsync(OperationI
 When populating activity tags it is recommended to follow the [OpenTracing naming convention][OpenTracingNamingConvention].
 
 In addition this guidance defines new tag names which can be used to improve quality of telemetry captured by Application Insights SDK.
+
+// Explain event payload parameters naming, refer to the DiagSource guide for the DiagSource naming and to Activity guide for the Activity naming.
 
 ## Translating activities to telemetry
 
