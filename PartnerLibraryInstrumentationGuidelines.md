@@ -31,13 +31,13 @@ private async Task<OperationOutput> ProcessOperationImplAsync(OperationInput inp
 
 public Task<OperationOutput> ProcessOperationAsync(OperationInput input)
 {
-    // any Diagnostic Source has any listeners
+    // this Diagnostic Source has any listeners?
     if (DiagnosticListener.IsEnabled())
     {
-        // is any listener interested in activity for this request?
+        // is any listener interested in activity for this input?
         bool isActivityEnabled = DiagnosticListener.IsEnabled(ActivityName, input);
 
-        // is any listener interested in activity exception?
+        // some listeners may only want to receive exceptions
         bool isExceptionEnabled = DiagnosticListener.IsEnabled(ActivityExceptionName);
 
         if (isActivityEnabled || isExceptionEnabled)
@@ -55,11 +55,13 @@ private async Task<OperationOutput> ProcessOperationInstrumentedAsync(OperationI
     Activity activity = null;
 
     // create and start activity if enabled
+    
+    /// isActivityEnabled DOES NOT exists in this scope!
     if (isActivityEnabled)
     {
         activity = new Activity(ActivityName);
 
-        activity.AddTag("component", "Microsoft.ApplicationInsights.Samples");
+        activity.AddTag("component", "Microsoft.ApplicationInsights.Samples");          //Can we eliminate it even further and use DiagSource name as component name?
         activity.AddTag("span.kind", "client");
         // TODO extract activity tags from input
 
@@ -92,6 +94,7 @@ private async Task<OperationOutput> ProcessOperationInstrumentedAsync(OperationI
     {
         if (isExceptionEnabled)
         {
+            // 
             DiagnosticListener.Write(ActivityExceptionName, new { Input = input, Exception = ex });
         }
     }
@@ -100,7 +103,8 @@ private async Task<OperationOutput> ProcessOperationInstrumentedAsync(OperationI
         if (activity != null)
         {
             // stop activity
-            activity.AddTag("error", (outputTask?.Status == TaskStatus.RanToCompletion).ToString());
+            // 
+            // activity.AddTag("error", (outputTask?.Status == TaskStatus.RanToCompletion).ToString()); // Can we eliminate it and use TaskStatus from the payload? It makes sense to standartize the payload name and type in this case
             DiagnosticListener.StopActivity(activity,
                 new
                 {
@@ -120,7 +124,7 @@ private async Task<OperationOutput> ProcessOperationInstrumentedAsync(OperationI
 In the sample code above different flavors of ```IsEnabled()``` method are called in this particular order: 
 
 * ```DiagnosticListener.IsEnabled()``` - checks if there is any listener for this diagnostic source. This is a very efficient preliminary check for listeners.
-* ```DiagnosticListener.IsEnabled(ActivityName, input1, input2, ...)``` - checks if there is any listener for this activity and allows the listener to inspect the input parameters to make the decision. The input parameters passed in this method should be useful for the listeners to determine whether the activity would be interesting or not
+* ```DiagnosticListener.IsEnabled(ActivityName, input1, ...)``` - checks if there is any listener for this activity and allows the listener to inspect the input parameters to make the decision. The input parameters passed in this method should be useful for the listeners to determine whether the activity would be interesting or not
 * ```DiagnosticListener.IsEnabled(ActivityStartName)``` - checks if there is any listener for activity `Start` event. Typically only the activity `Stop` event is interesting   
 * ```DiagnosticListener.IsEnabled(ActivityExceptionName)``` - checks if there is any listener for activity `Exception`. The code sample above supports a scenario where there is an active listener for the exception but none for the activity itself
 
@@ -140,37 +144,6 @@ A couple of tags defined by that convention have significant meaning and should 
 | `error` | Indicates whether activity completed successfully or not. |
 | `component`  | Indicates the source component from which the activities originate. This can be the library or service name. The difference between this tag and Diagnostic Source name is that a single library may use more than one Diagnostic Sources (in fact this is recommended in certain scenarios), however it should consistently use the same `component` tag  |
 
-
-In addition, in the later sections, this guidance defines new tag names which can be used to improve quality of telemetry captured by Application Insights SDK.
-
-
-## Capturing activities as Application Insights telemetry
-
-Upon being notified of Diagnostic Source activity event that Application Insights SDK is listening for, the event is attempted to be converted into one of the standard telemetry types. Below are the details specific to conversion for those supported types  
-
-### Common telemetry context
-
-All telemetry items will have the following context properties populated.
-
-| Telemetry field name | Notes and examples |
-|:--------------|:-------------------|
-| `Operation ID` | ```Activity.Current.RootId``` |
-| `Parent Operation ID` | ```Activity.Current.ParentId``` |
-| `Timestamp` | ```Activity.Current.StartTimeUtc``` |
-| `DiagnosticSource` context property | The name of the originating Diagnostic Source |
-| `Activity` context property | ```Activity.Current.OperationName``` |
-
-In addition all activity ```Activity.Current.Baggage``` properties will be added to context properties.
-
-### Dependency telemetry
-
-Dependency telemetry is collected based on all Activity `Stop` events. 
-
-If the activity specifies `span.kind` tag with value matching `server` or `consumer` then the dependency telemetry will not be collected as those typically should be treated as Request telemetry.
-
-The table below presents how each [Dependency telemetry][AIDataModelRdd] field is being populated based on the captured activity 
-
-| Dependency field name | How obtained? |
 |:--------------|:-------------------|
 | `Name` | `operation.name` tag, or <br/> `http.method` + `http.url` tags, or <br/> ```Activity.Current.OperationName``` |
 | `ID` | ```Activity.Current.Id``` |
@@ -182,6 +155,7 @@ The table below presents how each [Dependency telemetry][AIDataModelRdd] field i
 | `Success` | negated value of `error` tag (if can be parsed as ```bool```) |
 | `Custom properties` | all tags and baggage properties |
 | `Custom measurements` | not populated |
+
 
 
 [DiagnosticSourceGuide]: https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
