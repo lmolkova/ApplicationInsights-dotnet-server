@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
 {
     using System;
@@ -235,55 +237,155 @@ namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
         /// <param name="exception">The exception object if any.</param>
         /// <param name="thisObj">This object.</param>                
         /// <param name="returnValue">Return value of the function if any.</param>
-        internal void OnEnd(object exception, object thisObj, object returnValue)
+        internal void OnEndResponse(object request, object response)
         {
             try
             {
-                if (thisObj == null)
+                DependencyTelemetry telemetry;
+                if (this.TryGetPendingTelemetry(request, out telemetry))
                 {
-                    DependencyCollectorEventSource.Log.NotExpectedCallback(0, "OnBeginHttp", "thisObj == null");
-                    return;
-                }
-
-                DependencyCollectorEventSource.Log.EndCallbackCalled(thisObj.GetHashCode().ToString(CultureInfo.InvariantCulture));
-
-                WebRequest webRequest = thisObj as WebRequest;
-                if (webRequest == null)
-                {
-                    DependencyCollectorEventSource.Log.UnexpectedCallbackParameter("WebRequest");
-                }
-
-                var telemetryTuple = this.GetTupleForWebDependencies(webRequest);
-                if (telemetryTuple == null)
-                {
-                    DependencyCollectorEventSource.Log.EndCallbackWithNoBegin(thisObj.GetHashCode().ToString(CultureInfo.InvariantCulture));
-                    return;
-                }
-
-                if (telemetryTuple.Item1 == null)
-                {
-                    DependencyCollectorEventSource.Log.EndCallbackWithNoBegin(thisObj.GetHashCode().ToString(CultureInfo.InvariantCulture));
-                    return;
-                }
-
-                // Not custom created
-                if (!telemetryTuple.Item2)
-                {
-                    this.RemoveTupleForWebDependencies(webRequest);
-
-                    DependencyTelemetry telemetry = telemetryTuple.Item1;
-
-                    var responseObj = returnValue as HttpWebResponse;
-
-                    if (responseObj == null && exception != null)
+                    var responseObj = response as HttpWebResponse;
+                    if (responseObj != null)
                     {
-                        var webException = exception as WebException;
+                        int statusCode = -1;
 
-                        if (webException != null)
+                        try
                         {
-                            responseObj = webException.Response as HttpWebResponse;
+                            statusCode = (int)responseObj.StatusCode;
+                            SetTarget(telemetry, responseObj.Headers);
                         }
+                        catch (ObjectDisposedException)
+                        {
+                            // ObjectDisposedException is expected here in the following sequence: httpWebRequest.GetResponse().Dispose() -> httpWebRequest.GetResponse()
+                            // on the second call to GetResponse() we cannot determine the statusCode.
+                        }
+
+                        SetStatusCode(telemetry, statusCode);
                     }
+
+                    ClientServerDependencyTracker.EndTracking(this.telemetryClient, telemetry);
+                }
+            }
+            catch (Exception ex)
+            {
+                DependencyCollectorEventSource.Log.CallbackError(request == null ? 0 : request.GetHashCode(), "OnEndResponse", ex);
+            }
+        }
+
+        private bool TryGetPendingTelemetry(object request, out DependencyTelemetry telemetry)
+        {
+            telemetry = null;
+            if (request == null)
+            {
+                DependencyCollectorEventSource.Log.NotExpectedCallback(0, "OnBeginHttp", "request == null");
+                return false;
+            }
+
+            DependencyCollectorEventSource.Log.EndCallbackCalled(request.GetHashCode()
+                .ToString(CultureInfo.InvariantCulture));
+
+            WebRequest webRequest = request as WebRequest;
+            if (webRequest == null)
+            {
+                DependencyCollectorEventSource.Log.UnexpectedCallbackParameter("WebRequest");
+                return false;
+            }
+
+            var telemetryTuple = this.GetTupleForWebDependencies(webRequest);
+            if (telemetryTuple == null)
+            {
+                DependencyCollectorEventSource.Log.EndCallbackWithNoBegin(request.GetHashCode()
+                    .ToString(CultureInfo.InvariantCulture));
+                return false;
+            }
+
+            if (telemetryTuple.Item1 == null)
+            {
+                DependencyCollectorEventSource.Log.EndCallbackWithNoBegin(request.GetHashCode()
+                    .ToString(CultureInfo.InvariantCulture));
+                return false;
+            }
+
+            // Not custom created
+            if (!telemetryTuple.Item2)
+            {
+                telemetry = telemetryTuple.Item1;
+                this.RemoveTupleForWebDependencies(webRequest);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void SetTarget(DependencyTelemetry telemetry, WebHeaderCollection responseHeaders)
+        {
+            if (responseHeaders != null)
+            {
+                string targetAppId = null;
+
+                try
+                {
+                    targetAppId = responseHeaders.GetNameValueHeaderValue(RequestResponseHeaders.RequestContextHeader,
+                        RequestResponseHeaders.RequestContextCorrelationTargetKey);
+                }
+                catch (Exception ex)
+                {
+                    AppMapCorrelationEventSource.Log.GetCrossComponentCorrelationHeaderFailed(ex.ToInvariantString());
+                }
+
+                string currentComponentAppId;
+                if (this.correlationIdLookupHelper.TryGetXComponentCorrelationId(telemetry.Context.InstrumentationKey,
+                    out currentComponentAppId))
+                {
+                    // We only add the cross component correlation key if the key does not remain the current component.
+                    if (!string.IsNullOrEmpty(targetAppId) && targetAppId != currentComponentAppId)
+                    {
+                        telemetry.Type = RemoteDependencyConstants.AI;
+                        telemetry.Target += " | " + targetAppId;
+                    }
+                }
+
+                string targetRoleName = null;
+                try
+                {
+                    targetRoleName = responseHeaders.GetNameValueHeaderValue(
+                        RequestResponseHeaders.RequestContextHeader,
+                        RequestResponseHeaders.RequestContextTargetRoleNameKey);
+                }
+                catch (Exception ex)
+                {
+                    AppMapCorrelationEventSource.Log.GetComponentRoleNameHeaderFailed(ex.ToInvariantString());
+                }
+
+                if (!string.IsNullOrEmpty(targetRoleName))
+                {
+                    telemetry.Type = RemoteDependencyConstants.AI;
+                    telemetry.Target += " | roleName:" + targetRoleName;
+                }
+            }
+        }
+
+        private void SetStatusCode(DependencyTelemetry telemetry, int statusCode)
+        {
+            telemetry.ResultCode = statusCode > 0 ? statusCode.ToString(CultureInfo.InvariantCulture) : string.Empty;
+            telemetry.Success = (statusCode > 0) && (statusCode < 400);
+        }
+
+        /// <summary>
+        /// Common helper for all End Callbacks.
+        /// </summary>        
+        /// <param name="exception">The exception object if any.</param>
+        /// <param name="thisObj">This object.</param>                
+        /// <param name="returnValue">Return value of the function if any.</param>
+        internal void OnEndException(object exception, object request)
+        {
+            try
+            {
+                DependencyTelemetry telemetry;
+                if (TryGetPendingTelemetry(request, out telemetry))
+                {
+                    var webException = exception as WebException;
+                    HttpWebResponse responseObj = webException?.Response as HttpWebResponse;
 
                     if (responseObj != null)
                     {
@@ -292,6 +394,7 @@ namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
                         try
                         {
                             statusCode = (int)responseObj.StatusCode;
+                            SetTarget(telemetry, responseObj.Headers);
                         }
                         catch (ObjectDisposedException)
                         {
@@ -299,70 +402,12 @@ namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
                             // on the second call to GetResponse() we cannot determine the statusCode.
                         }
 
-                        telemetry.ResultCode = statusCode > 0 ? statusCode.ToString(CultureInfo.InvariantCulture) : string.Empty;
-                        telemetry.Success = (statusCode > 0) && (statusCode < 400);
+                        SetStatusCode(telemetry, statusCode);
                     }
-                    else if (exception != null)
+                    else if (webException != null)
                     {
-                        var webException = exception as WebException;
-                        if (webException != null)
-                        {
-                            telemetry.ResultCode = webException.Status.ToString();
-                        }
-
+                        telemetry.ResultCode = webException.Status.ToString();
                         telemetry.Success = false;
-                    }
-
-                    if (responseObj != null)
-                    {
-                        try
-                        {
-                            if (responseObj.Headers != null)
-                            {
-                                string targetAppId = null;
-
-                                try
-                                {
-                                    targetAppId = responseObj.Headers.GetNameValueHeaderValue(RequestResponseHeaders.RequestContextHeader, RequestResponseHeaders.RequestContextCorrelationTargetKey);
-                                }
-                                catch (Exception ex)
-                                {
-                                    AppMapCorrelationEventSource.Log.GetCrossComponentCorrelationHeaderFailed(ex.ToInvariantString());
-                                }
-
-                                string currentComponentAppId;
-                                if (this.correlationIdLookupHelper.TryGetXComponentCorrelationId(telemetry.Context.InstrumentationKey, out currentComponentAppId))
-                                {
-                                    // We only add the cross component correlation key if the key does not remain the current component.
-                                    if (!string.IsNullOrEmpty(targetAppId) && targetAppId != currentComponentAppId)
-                                    {
-                                        telemetry.Type = RemoteDependencyConstants.AI;
-                                        telemetry.Target += " | " + targetAppId;
-                                    }
-                                }
-
-                                string targetRoleName = null;
-                                try
-                                {
-                                    targetRoleName = responseObj.Headers.GetNameValueHeaderValue(RequestResponseHeaders.RequestContextHeader, RequestResponseHeaders.RequestContextTargetRoleNameKey);
-                                }
-                                catch (Exception ex)
-                                {
-                                    AppMapCorrelationEventSource.Log.GetComponentRoleNameHeaderFailed(ex.ToInvariantString());
-                                }
-
-                                if (!string.IsNullOrEmpty(targetRoleName))
-                                {
-                                    telemetry.Type = RemoteDependencyConstants.AI;
-                                    telemetry.Target += " | roleName:" + targetRoleName;
-                                }
-                            }
-                        }
-                        catch (ObjectDisposedException)
-                        {
-                            // ObjectDisposedException is expected here in the following sequence: httpWebRequest.GetResponse().Dispose() -> httpWebRequest.GetResponse()
-                            // on the second call to GetResponse() we cannot determine the statusCode.
-                        }
                     }
 
                     ClientServerDependencyTracker.EndTracking(this.telemetryClient, telemetry);
@@ -370,7 +415,36 @@ namespace Microsoft.ApplicationInsights.DependencyCollector.Implementation
             }
             catch (Exception ex)
             {
-                DependencyCollectorEventSource.Log.CallbackError(thisObj == null ? 0 : thisObj.GetHashCode(), "OnBeginHttp", ex);
+                DependencyCollectorEventSource.Log.CallbackError(request == null ? 0 : request.GetHashCode(), "OnEndException", ex);
+            }
+        }
+
+
+        /// <summary>
+        /// Common helper for all End Callbacks.
+        /// </summary>        
+        /// <param name="request">WebRequest object.</param>
+        /// <param name="statusCode">HttpStatusCode from response.</param>                
+        /// <param name="responseHeaders">Response headers.</param>
+        internal void OnEndResponse(object request, object statusCode, object responseHeaders)
+        {
+            try
+            {
+                DependencyTelemetry telemetry;
+                if (TryGetPendingTelemetry(request, out telemetry))
+                {
+                    if (statusCode != null)
+                    {
+                        SetStatusCode(telemetry, (int) statusCode);
+                    }
+                    SetTarget(telemetry, (WebHeaderCollection)responseHeaders);
+
+                    ClientServerDependencyTracker.EndTracking(this.telemetryClient, telemetry);
+                }
+            }
+            catch (Exception ex)
+            {
+                DependencyCollectorEventSource.Log.CallbackError(request == null ? 0 : request.GetHashCode(), "OnEndResponse", ex);
             }
         }
 

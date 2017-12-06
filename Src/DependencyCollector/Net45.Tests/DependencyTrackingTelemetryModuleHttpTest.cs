@@ -83,6 +83,13 @@
         }
 
         [TestMethod]
+        [Timeout(5000000)]
+        public async Task TestZeroContentResponseDiagnosticSource()
+        {
+            await this.TestCollectionHttpClientSucessfulResponse(new Uri(LocalhostUrl), 200);
+        }
+
+        [TestMethod]
         [Timeout(5000)]
         public void TestDependencyCollectionDiagnosticSourceWithParentActivity()
         {
@@ -341,6 +348,30 @@
             }
         }
 
+
+        private async Task TestCollectionHttpClientSucessfulResponse(Uri url, int statusCode)
+        {
+            using (this.CreateDependencyTrackingModule(true))
+            {
+                using (HttpClient client = new HttpClient())
+                using (new LocalServer(LocalhostUrl))
+                {
+                    try
+                    {
+                        using (HttpResponseMessage response = await client.GetAsync(url))
+                        {
+                            Assert.AreEqual(0, response.Content.Headers.ContentLength);
+                        }
+                    }
+                    catch (WebException)
+                    {
+                        // ignore and let ValidateTelemetry method check status code
+                    }
+                }
+
+                this.ValidateTelemetry(true, this.sentTelemetry.Single(), url, null, statusCode >= 200 && statusCode < 300, statusCode.ToString(CultureInfo.InvariantCulture));
+            }
+        }
         private async Task TestCollectionCanceledRequest(bool enableDiagnosticSource)
         {
             using (this.CreateDependencyTrackingModule(enableDiagnosticSource))
@@ -529,6 +560,7 @@
                             }
                             else
                             {
+                                context.Response.ContentLength64 = 0;
                                 context.Response.StatusCode = 200;
                             }
 
